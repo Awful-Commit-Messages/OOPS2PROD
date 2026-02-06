@@ -48,4 +48,63 @@ class OrganicMultiAgentEngine:
         self.npc_agents: Dict[str, NPCAgent] = {}
         self.narrator_agent: Optional[NarratorAgent] = None
 
-        logger.info("Game engine initialized with {len(api_keys)} API keys")
+        logger.info(f"Game engine initialized with {len(api_keys)} API keys")
+
+    # =========================================================================
+    # GAME INITIALIZATION
+    # =========================================================================
+
+    def start_game(self) -> dict:
+        """
+        Initialize a new game
+
+        Process:
+        1. Load scenario configuration
+        2. Create game state with NPCs
+        3. Initialize the GM agent
+        4. Initialize the NPC agents
+        5. Initialize the Narrator agent
+        6. Generate the opening scene
+
+        Returns:
+            dict: {
+                scenario_name: str,
+                narrator_name: str,
+                narrator_intro: str,
+                opening_scene: str,
+                state: dict (full game state)
+            }
+        """
+
+        logger.info("=" * 60)
+        logger.info("STARTING NEW GAME")
+        logger.info("=" * 60)
+
+        # Step 1: Create a game state from the scenario configuration:
+        self.state = self._create_game_state_from_config()
+
+        # Step 2: Create narrator state from configuration:
+        narrator_state = self._create_narrator_from_config()
+
+        # Step 3: Initialize the agents:
+        self._initialize_agents(narrator_state)
+
+        # Step 4: Get the narrator's introduction:
+        narrator_intro = self._get_narrator_intro()
+
+        # Step 5: Get othe opening scene:
+        opening_scene = (
+            self.state.event_log[0].description if self.state.event_log else ""
+        )
+
+        logger.info(f"Game started: {self.state.scenario_name}")
+        logger.info(f"Narrator: {narrator_state.name}")
+        logger.info(f"NPCs: {list(self.state.npcs.keys())}")
+
+        return {
+            "scenario_name": self.state.scenario_name,
+            "narrator_name": narrator_state.name,
+            "narrator_intro": narrator_intro,
+            "opening_scene": opening_scene,
+            "state": self.state.to_dict(),
+        }
