@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class OrganicMultiAgentEngine:
     """
-    Our core game orchestrator
+    The core game orchestrator.
 
     Responsibilities:
     1. Initialize all the agents (GM, NPCs, Narrator)
@@ -56,7 +56,7 @@ class OrganicMultiAgentEngine:
 
     def start_game(self) -> dict:
         """
-        Initialize a new game
+        Initializes a new game.
 
         Process:
         1. Load scenario configuration
@@ -111,7 +111,7 @@ class OrganicMultiAgentEngine:
 
     def _create_game_state_from_config(self) -> GameState:
         """
-        Create the game state from the SCENARIO configuration.
+        Creates the game state from the SCENARIO configuration.
 
         Returns:
             GameState: Initialized game state with NPCs
@@ -146,3 +146,21 @@ class OrganicMultiAgentEngine:
         )
 
         return state
+
+    def _create_narrator_from_config(self) -> NarratorState:
+        """
+        Creates the narrator's state from the NARRATOR configuration.
+
+        Returns:
+            NarratorState: Initialized narrator
+        """
+
+        return NarratorState(
+            narrator_id=NARRATOR["style"],
+            name=NARRATOR["name"],
+            personality=NARRATOR["personality"],
+            narrative_style=NARRATOR["voice"],
+            blind_spots=NARRATOR["blind_spots"],
+            obsessions=NARRATOR["obsessions"],
+            reliability=NARRATOR["starting_reliability"],
+        )
