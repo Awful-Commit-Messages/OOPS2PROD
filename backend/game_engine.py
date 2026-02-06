@@ -108,3 +108,41 @@ class OrganicMultiAgentEngine:
             "opening_scene": opening_scene,
             "state": self.state.to_dict(),
         }
+
+    def _create_game_state_from_config(self) -> GameState:
+        """
+        Create the game state from the SCENARIO configuration.
+
+        Returns:
+            GameState: Initialized game state with NPCs
+        """
+
+        # Create the base game state:
+        state = GameState(
+            scenario_name=SCENARIO["name"],
+            situation_description=SCENARIO["situation"],
+            player_role=SCENARIO["player_role"],
+        )
+
+        # Create NPCs from the configuration:
+        for npc_config in SCENARIO["npcs"]:
+            npc = NPCState(
+                npc_id=npc_config["id"],
+                name=npc_config["name"],
+                personality=npc_config["personality"],
+                current_goal=npc_config["goal"],
+                secrets=npc_config["secrets"],
+                urgency_level=npc_config["starting_urgency"],
+            )
+            state.npcs[npc.npc_id] = npc
+
+        # Log the opening event from the scenario:
+        state.log_event(
+            event_type="gm_stimulus",
+            actor="frank",  # FIXME!  This should be determined by the scenario somehow.
+            description="blah blah blah",  # FIXME!
+            location=state.player_location,
+            participants=["frank"],  # FIXME!
+        )
+
+        return state
