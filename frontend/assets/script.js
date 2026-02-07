@@ -7,41 +7,111 @@ const exit_button = document.getElementById("exit_button")
 const start_button = document.getElementById("start_button")
 
 logger_button.addEventListener("click", function () {
-    const isHidden = logger_display.style.display === "none";
+    logger_button_toggle = !logger_button_toggle;
 
-    logger_display.style.display = isHidden ? "block" : "none";
-    logger_button.textContent = isHidden ? "Logger (on)" : "Logger (off)";
+    logger_display.style.display = logger_button_toggle ? "block" : "none";
+    logger_button.innerText = logger_button_toggle
+        ? "Logger (on)"
+        : "Logger (off)";
 });
+function formatStartupInfo(data) {
+    const lines = [];
 
-start_button.addEventListener("click", function () {
+    lines.push(`SCENARIO: ${data.scenario_name}`);
+    lines.push(`NARRATOR: ${data.narrator_name}`);
+    lines.push("");
 
-    fetch("/api/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            event: {
-                message: "Hi I'd like to start a game please :)"
+    if (data.opening_scene) {
+        lines.push("OPENING SCENE");
+        lines.push("────────────");
+        lines.push(data.opening_scene);
+        lines.push("");
+    }
+
+    const state = data.state;
+    if (state) {
+        lines.push("WORLD STATE");
+        lines.push("───────────");
+        lines.push(`Role: ${state.player_role}`);
+        lines.push(`Location: ${state.player_location}`);
+        lines.push(`Tension: ${state.tension_level}`);
+        lines.push(`Energy: ${state.scene_energy}`);
+        lines.push("");
+
+        if (state.situation_description) {
+            lines.push("SITUATION");
+            lines.push(state.situation_description);
+            lines.push("");
+        }
+
+        if (state.npcs && Object.keys(state.npcs).length) {
+            lines.push("CHARACTERS");
+            lines.push("──────────");
+
+            for (const npc of Object.values(state.npcs)) {
+                lines.push(`${npc.name}`);
+                lines.push(`  Personality: ${npc.personality}`);
+                lines.push(`  Mood: ${npc.emotional_state}`);
+                lines.push(`  Goal: ${npc.current_goal}`);
+                lines.push(`  Urgency: ${npc.urgency_level}`);
+                lines.push("");
             }
-        })
+        }
+    }
+
+    lines.push("────────────");
+    lines.push("SYSTEM READY");
+    lines.push("");
+
+    return lines.join("\n");
+}
+start_button.addEventListener("click", async function () {
+
+    inputEnabled = false;
+
+    const res = await fetch("/api/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
     });
+
+    const data = await res.json();
 
     // fade out button
     start_button.style.opacity = "0";
 
-    setTimeout(() => {
-        // AFTER fade out finishes
+    setTimeout(async () => {
         start_button.style.display = "none";
-
-        // show main page (still invisible)
         main_page.style.display = "flex";
 
-        // next frame so opacity transition actually runs
         setTimeout(() => {
             main_page.style.opacity = "1";
         }, 10);
 
-    }, 1000); // matches fade-out duration
+        textarea.value = "";
 
+        // ── BOOT SEQUENCE ─────────────────────────────
+        textarea.value += "Initializing narrative engine...\n\n";
+
+        await ghostTypeTextarea(
+            textarea,
+            formatStartupInfo(data)
+        );
+
+        textarea.value += "Narrator:\n";
+        await ghostTypeTextarea(
+            textarea,
+            data.narrator_intro
+        );
+
+        // ── ENTER SHELL MODE ──────────────────────────
+        textarea.value += "oops@2prod:~$\0 ";
+        inputEnabled = true;
+
+        textarea.selectionStart =
+        textarea.selectionEnd =
+            textarea.value.length;
+
+    }, 1000);
 });
 
 exit_button.addEventListener("click", function () {
@@ -63,14 +133,6 @@ exit_button.addEventListener("click", function () {
 
     }, 1000); // matches fade duration
 
-});
-
-logger_button.addEventListener("click", function () {
-    logger_button_toggle = !logger_button_toggle;
-
-    logger_button.innerText = logger_button_toggle
-        ? "Logger (on)"
-        : "Logger (off)";
 });
 
 const textarea = document.getElementById("interface_area");
@@ -118,25 +180,23 @@ textarea.addEventListener("keydown", async (e) => {
     }
 });
 
-async function ghostTypeTextarea(textarea, text, i = 0) {
-    if (i < text.length) {
-        textarea.value += text[i];
-        textarea.scrollTop = textarea.scrollHeight;
+async function ghostTypeTextarea(textarea, text, speed = 18) {
+    return new Promise(resolve => {
+        let i = 0;
 
-        setTimeout(
-            () => ghostTypeTextarea(textarea, text, i + 1),
-            18
-        );
-    } else {
-        textarea.value += "\n\n";
-        textarea.value += "oops@2prod:~$\0 ";
+        function type() {
+            if (i < text.length) {
+                textarea.value += text[i++];
+                textarea.scrollTop = textarea.scrollHeight;
+                setTimeout(type, speed);
+            } else {
+                textarea.value += "\n\n";
+                resolve();
+            }
+        }
 
-        // 🔓 input is now allowed
-        inputEnabled = true;
-
-        // force cursor to end
-        textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
-    }
+        type();
+    });
 }
 
 async function sendPayload(message) {
