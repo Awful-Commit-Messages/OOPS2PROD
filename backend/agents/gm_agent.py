@@ -111,6 +111,19 @@ class GMAgent:
         FIXME!  This needs more.
         """
 
+        npc_summary = {
+            npc_id: {
+                "name": npc.name,
+                "personality": npc.personality,
+                "emotional_state": npc.emotional_state,
+                "urgency_level": npc.urgency_level,
+                "goal": npc.current_goal,
+                "secrets": npc.secrets,
+                "knowledge_tail": npc.knowledge[-3:],
+            }
+            for npc_id, npc in game_state.npcs.items()
+        }
+
         prompt = f"""
 You are opening a new scene for an interactive roleplaying experience.
 
