@@ -40,6 +40,7 @@ async def play(request: Request):
     event = payload.get("event", {})
     message = event.get("message")
 
+    #TODO: implement the backend function here
     print(event)
 
     time.sleep(5)
