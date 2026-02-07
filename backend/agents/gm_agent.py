@@ -1,9 +1,9 @@
 from anthropic import Anthropic
-import json
+import json, os
 import logging
 from typing import Dict, List, Optional
 
-from models.game_state import GameState
+from backend.models.game_state import GameState
 
 # Logging of prompts, player actions, and state
 logger = logging.getLogger(__name__)
@@ -30,10 +30,16 @@ class GMAgent:
         """
         Initialize GM Agent
         """
-        self.client = Anthropic()
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+
+        if not api_key:
+            raise RuntimeError("ANTHROPIC_API_KEY is not set in the environment")
+
+        self.client = Anthropic(api_key=api_key)
         self.model = "claude-sonnet-4-5-20250929"
 
         logger.info("GM Agent initialized")
+
 
     def get_system_prompt(self, game_state: GameState) -> str:
         """

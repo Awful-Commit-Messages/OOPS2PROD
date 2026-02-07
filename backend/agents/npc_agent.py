@@ -2,8 +2,9 @@ from anthropic import Anthropic
 import json
 import logging
 from typing import Dict, Optional
-from models.npc_state import NPCState
-from models.game_state import GameState
+
+from backend.models.npc_state import NPCState
+from backend.models.game_state import GameState
 
 logger = logging.getLogger(__name__)
 

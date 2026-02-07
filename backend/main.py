@@ -2,9 +2,11 @@ from fastapi import FastAPI, APIRouter, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import time
+from backend.game_engine import OrganicMultiAgentEngine
 
 # start FastAPI server
 app = FastAPI()
+engine = OrganicMultiAgentEngine(api_keys=[])
 
 # =======================================================
 # =======================================================
@@ -31,7 +33,14 @@ api = APIRouter(prefix="/api")
 # API status 
 @api.get("/status")
 def status():
-    return { "status": "THE SERVER IS ON, OK??s" }
+    return { 
+        "message": "THE SERVER IS ON, OK??", 
+        "status": "OK"
+    }
+    
+@api.post("/start")
+def start_game():
+    return engine.start_game()
 
 @api.post("/play")
 async def play(request: Request):
@@ -40,12 +49,14 @@ async def play(request: Request):
     event = payload.get("event", {})
     message = event.get("message")
 
-    #TODO: implement the backend function here
-    print(event)
+    if not message:
+        return {"error": "No message provided"}
 
-    time.sleep(5)
-    return {
-        "message": "bot says: test successful! \0"
-    }
+    print(event)
+    result = await engine.process_moment(message)
+
+    print(result)
+    
+    return { "message": result["narration"] }
     
 app.include_router(api)

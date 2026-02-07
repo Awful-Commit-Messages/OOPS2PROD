@@ -13,8 +13,17 @@ logger_button.addEventListener("click", function () {
     logger_button.textContent = isHidden ? "Logger (on)" : "Logger (off)";
 });
 
-
 start_button.addEventListener("click", function () {
+
+    fetch("/api/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            event: {
+                message: "Hi I'd like to start a game please :)"
+            }
+        })
+    });
 
     // fade out button
     start_button.style.opacity = "0";
@@ -86,7 +95,7 @@ textarea.addEventListener("keydown", async (e) => {
 
         console.log(lastItem);
 
-        textarea.value += "\n";
+        textarea.value += "\n\n";
         const thinkingStart = textarea.value.length;
 
         textarea.value += "Thinking";
@@ -97,6 +106,7 @@ textarea.addEventListener("keydown", async (e) => {
 
             stopThinking();
 
+            textarea.value += "\nNarrator: "
             await ghostTypeTextarea(textarea, response.message);
 
         } catch (err) {
@@ -114,7 +124,7 @@ async function ghostTypeTextarea(textarea, text, i = 0) {
 
         setTimeout(
             () => ghostTypeTextarea(textarea, text, i + 1),
-            50
+            18
         );
     } else {
         textarea.value += "\n\n";
@@ -149,22 +159,45 @@ async function sendPayload(message) {
 }
 
 function startThinkingDots(textarea, startIndex) {
+    const phrases = [
+        "Interpreting the moment",
+        "Reading between the lines",
+        "Weaving the narrative",
+        "Tracking tension",
+        "Reconstructing intent",
+        "Watching reactions carefully",
+        "Letting the scene unfold",
+        "This is getting interesting",
+        "Something is taking shape"
+    ];
+
+    let phraseIndex = Math.floor(Math.random() * phrases.length);
+    let currentPhrase = phrases[phraseIndex];
     let dots = 0;
-    const maxDots = 6;
+    const maxDots = 3;
+
+    let ticks = 0;
 
     const intervalId = setInterval(() => {
+        ticks++;
+
+        // advance dots smoothly
         dots = (dots + 1) % (maxDots + 1);
 
-        // keep everything BEFORE "Thinking"
-        textarea.value = textarea.value.slice(0, startIndex);
+        // change phrase only every ~6–8 seconds
+        if (ticks % 18 === 0) {
+            phraseIndex = (phraseIndex + 1) % phrases.length;
+            currentPhrase = phrases[phraseIndex];
+            dots = 0;
+        }
 
-        textarea.value += "Thinking" + ".".repeat(dots);
+        textarea.value = textarea.value.slice(0, startIndex);
+        textarea.value += currentPhrase + ".".repeat(dots);
         textarea.scrollTop = textarea.scrollHeight;
-    }, 369);
+    }, 400);
 
     return () => {
         clearInterval(intervalId);
-        // remove "Thinking..." after done thinking
         textarea.value = textarea.value.slice(0, startIndex);
     };
 }
