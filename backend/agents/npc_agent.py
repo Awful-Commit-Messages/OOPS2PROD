@@ -110,3 +110,103 @@ STAY IN CHARACTER AT ALL TIMES.
 
 Always respond in valid JSON format.
 """
+    
+    def respond_to_moment(self, context: str, game_state: GameState) -> dict:
+        """
+        NPC responds to something that just happened
+
+        The NPC considers:
+        - What did they perceive? (based on limited knowledge)
+        - How does this affect their goal?
+        - What's their emotional reaction?
+        - Should they speak, act, or stay silent?
+
+        Args:
+            context: What the NPC perceives (from GM)
+            game_states: Current game state
+
+        Returns:
+            dict: {
+                'npc_id': str,
+                'npc_name': str,
+                'dialogue': str or None (what they say),
+                'action': str or None (what they do physically),
+                'internal_though': str (private reasoning),
+                'emotional_state': str,
+                'urgency_change': int (-2 to +2),
+                'wants_to_act_next': bool (do they want to act immediately after)
+            }
+        """
+        # get list of other NPCs present
+        other_npcs = [
+            npc.name
+            for npc_id, npc in game_state.npcs.items()
+            if npc_id != self.npc_state.npc_id and npc.location == self.npc_state.location
+        ]
+
+        prompt = f"""
+WHAT JUST HAPPENED (from your perspective):
+{context}
+
+OTHER PRESENT: {', '.join(other_npcs) if other_npcs else 'Just you and the player'}
+
+YOUR CURRENT URGENCY: {self.npc_state.urgency_level}/10
+
+How do you respond?
+
+Consider:
+- Does this help or hurt your goal?
+- How does this make you feel?
+- What do your relationship with these people suggest?
+- Should you reveal information or hide it?
+- Should you escalate or de-escalate?
+- Are you being threatened?
+- Is this an opportunity?
+
+You can:
+- Speak (dialogue)
+- Act physically (action)
+- Both speak and act
+- Observe silently
+
+Be specific. No "I react" but "I slam my fist on the table."
+React emotionally. You are not a robot.ImportError
+
+Respond only with valid JSON:
+{{
+    "dialogue": "what you say, in quotes (or null if silent)",
+    "action": "what you do physically (or null if nothing)",
+    "internal_thought": "your private reasoning (not visible to others)",
+    "emotional_state": "your current emotion (angry/scared/calculating/desperate/calm/etc)",
+    "urgency_change": -2 to +2,
+    "wants_to_act_next": true/false
+}}
+"""
+        try:
+            logger.info(f"{self.npc_state.name} processing response")
+            response = await self._call_claude(prompt)
+            result = json.loads(response)
+
+            # add NPC identification
+            result['npc_id'] = self.npc_state.npc_id
+            result['npc_name'] = self.npc_state.name
+
+            # update NPC state based on response
+            self._update_state_from_response(result)
+
+            # log what the NPC did
+            if result.get('dialogue'):
+                logger.info(f" {self.npc_state.name} says: \"{result['dialogue'][:60]}\"")
+            elif result.get('action'):
+                logger.info(f" {self.npc_state.name} does: {result['action'][:60]}\"")
+            else
+                logger.info(f" {self.npc_state.name} observes silently")
+
+            return result
+        
+        except json.JSONDecodeError as e:
+            logger.error(f"{self.npc_state.name} response JSON  parse failed: {e}")
+            logger.error(f"Raw response: {response[:200]}")
+
+            return self._fallback_response()
+        
