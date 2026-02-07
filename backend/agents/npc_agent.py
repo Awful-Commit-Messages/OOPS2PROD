@@ -2,10 +2,12 @@ from anthropic import Anthropic
 import json
 import logging
 from typing import Dict, Optional
-from models.npc_state import NPCState
-from models.game_state import GameState
+
+from backend.models.npc_state import NPCState
+from backend.models.game_state import GameState
 
 logger = logging.getLogger(__name__)
+
 
 class NPCAgent:
     """
@@ -51,15 +53,25 @@ class NPCAgent:
             str: Complet system prompt for this specific NPC
         """
         # format knowledge as a readable list
-        knowledge_str = "\n".join(
-            [f"- {k}" for k in self.npc_state.knowledge[-5:]] # last 5 things
-        ) if self.npc_state.knowledge else "- Nothing yet (you just arrived)"
+        knowledge_str = (
+            "\n".join(
+                [f"- {k}" for k in self.npc_state.knowledge[-5:]]  # last 5 things
+            )
+            if self.npc_state.knowledge
+            else "- Nothing yet (you just arrived)"
+        )
 
         # format relationships
-        relationships_str = "\n".join([
-            f"- {name}: {value}/10 ({'trust' if value > 5 else 'distrust' if value < 5 else 'neutral'})"
-            for name, value in self.npc_state.relationships.items()
-        ]) if self.npc_state.relationships else "- No established relationships yet"
+        relationships_str = (
+            "\n".join(
+                [
+                    f"- {name}: {value}/10 ({'trust' if value > 5 else 'distrust' if value < 5 else 'neutral'})"
+                    for name, value in self.npc_state.relationships.items()
+                ]
+            )
+            if self.npc_state.relationships
+            else "- No established relationships yet"
+        )
 
         # format secrets
         secrets_str = "\n".join([f"- {secret}" for secret in self.npc_state.secrets])
@@ -110,7 +122,7 @@ STAY IN CHARACTER AT ALL TIMES.
 
 Always respond in valid JSON format.
 """
-    
+
     async def respond_to_moment(self, context: str, game_state: GameState) -> dict:
         """
         NPC responds to something that just happened
@@ -141,14 +153,15 @@ Always respond in valid JSON format.
         other_npcs = [
             npc.name
             for npc_id, npc in game_state.npcs.items()
-            if npc_id != self.npc_state.npc_id and npc.location == self.npc_state.location
+            if npc_id != self.npc_state.npc_id
+            and npc.location == self.npc_state.location
         ]
 
         prompt = f"""
 WHAT JUST HAPPENED (from your perspective):
 {context}
 
-OTHER PRESENT: {', '.join(other_npcs) if other_npcs else 'Just you and the player'}
+OTHER PRESENT: {", ".join(other_npcs) if other_npcs else "Just you and the player"}
 
 YOUR CURRENT URGENCY: {self.npc_state.urgency_level}/10
 
@@ -184,61 +197,68 @@ Respond only with valid JSON:
 """
         try:
             logger.info(f"{self.npc_state.name} processing response")
-            response = await self._call_claude(prompt=prompt,
+            response = await self._call_claude(
+                prompt=prompt,
                 response_schema={
                     "type": "object",
                     "properties": {
                         "dialogue": {
                             "type": "string",
-                            "description": "What you say, or null if silent"
+                            "description": "What you say, or null if silent",
                         },
                         "action": {
                             "type": "string",
-                            "description": "What you do physically, or null"
+                            "description": "What you do physically, or null",
                         },
                         "internal_thought": {
                             "type": "string",
-                            "description": "Your private reasoning"
+                            "description": "Your private reasoning",
                         },
                         "emotional_state": {
                             "type": "string",
-                            "description": "Your current emotion"
+                            "description": "Your current emotion",
                         },
                         "urgency_change": {
                             "type": "integer",
                         },
-                        "wants_to_act_next": {
-                            "type": "boolean"
-                        }
+                        "wants_to_act_next": {"type": "boolean"},
                     },
-                    "required": ["dialogue", "action", "internal_thought", "emotional_state", "urgency_change", "wants_to_act_next"],
-                    "additionalProperties": False
-                })
+                    "required": [
+                        "dialogue",
+                        "action",
+                        "internal_thought",
+                        "emotional_state",
+                        "urgency_change",
+                        "wants_to_act_next",
+                    ],
+                    "additionalProperties": False,
+                },
+            )
             result = json.loads(response)
 
             # add NPC identification
-            result['npc_id'] = self.npc_state.npc_id
-            result['npc_name'] = self.npc_state.name
+            result["npc_id"] = self.npc_state.npc_id
+            result["npc_name"] = self.npc_state.name
 
             # update NPC state based on response
             self._update_state_from_response(result)
 
             # log what the NPC did
-            if result.get('dialogue'):
-                logger.info(f" {self.npc_state.name} says: \"{result['dialogue'][:60]}\"")
-            elif result.get('action'):
-                logger.info(f" {self.npc_state.name} does: {result['action'][:60]}\"")
+            if result.get("dialogue"):
+                logger.info(f' {self.npc_state.name} says: "{result["dialogue"][:60]}"')
+            elif result.get("action"):
+                logger.info(f' {self.npc_state.name} does: {result["action"][:60]}"')
             else:
                 logger.info(f" {self.npc_state.name} observes silently")
 
             return result
-        
+
         except json.JSONDecodeError as e:
             logger.error(f"{self.npc_state.name} response JSON  parse failed: {e}")
             logger.error(f"Raw response: {response[:200]}")
 
             return self._fallback_response()
-        
+
     def _update_state_from_response(self, response: dict):
         """
         Update NPC's internal state based on their response
@@ -247,18 +267,20 @@ Respond only with valid JSON:
             response: The NPC's response dict
         """
         # update emotional state
-        if response.get('emotional_state'):
-            self.npc_state.emotional_state = response['emotional_state']
+        if response.get("emotional_state"):
+            self.npc_state.emotional_state = response["emotional_state"]
 
         # update urgency
-        urgency_change = response.get('urgency_change', 0)
-        self.npc_state.urgency_level = max(1, min(10, self.npc_state.urgency_level + urgency_change))
+        urgency_change = response.get("urgency_change", 0)
+        self.npc_state.urgency_level = max(
+            1, min(10, self.npc_state.urgency_level + urgency_change)
+        )
 
         # track last action
-        if response.get('dialogue'):
-            self.npc_state.last_action = f"Said: \"{response['dialogue']}\""
-        elif response.get('action'):
-            self.npc_state.last_action = response['action']
+        if response.get("dialogue"):
+            self.npc_state.last_action = f'Said: "{response["dialogue"]}"'
+        elif response.get("action"):
+            self.npc_state.last_action = response["action"]
 
     def _fallback_response(self) -> dict:
         """
@@ -270,16 +292,16 @@ Respond only with valid JSON:
         logger.warning(f"Using fallback response for {self.npc_state.name}")
 
         return {
-            'npc_id': self.npc_state.npc_id,
-            'npc_name': self.npc_state.name,
-            'dialogue': self.npc_state.dialogue,
-            'action': f"{self.npc_state.name} watches tensely",
-            'internal_thought': "Trying to assess the situation",
-            'emotional_state': self.npc_state.emotional_state,
-            'urgency_change': 0,
-            'wants_to_act_next': False
+            "npc_id": self.npc_state.npc_id,
+            "npc_name": self.npc_state.name,
+            "dialogue": self.npc_state.dialogue,
+            "action": f"{self.npc_state.name} watches tensely",
+            "internal_thought": "Trying to assess the situation",
+            "emotional_state": self.npc_state.emotional_state,
+            "urgency_change": 0,
+            "wants_to_act_next": False,
         }
-    
+
     async def check_initiative(self, game_state: GameState) -> Optional[dict]:
         """
         Check if NPC wants to act autonomously
@@ -305,6 +327,11 @@ Respond only with valid JSON:
             }
             Returns none if NPC doesn't want to act
         """
+        recent_events = (
+            "\n".join(self.npc_state.knowledge[-3:])
+            if self.npc_state.knowledge
+            else "Nothing"
+        )
         prompt = f"""
 CURRENT SITUATION:
 - Your goal: {self.npc_state.current_goal}
@@ -313,7 +340,7 @@ CURRENT SITUATION:
 - Your goal status: {self.npc_state.goal_status}
 
 RECENT EVENTS YOU KNOW ABOUT:
-{"\n".join(self.npc_state.knowledge[-3:]) if self.npc_state.knowledge else "Nothing"}
+{recent_events}
 
 Your urgency is HIGH. Do you need to take action right now to pursue your goal?
 
@@ -333,51 +360,50 @@ Be concrete: Not "I do something" but "I pull out my gun and point it at Michael
 Respond only with valid JSON:
 {{
     "should_act": true/false,
-    "action": "sepcific action you take (if acting),
+    "action": "specific action you take (if acting),
     "reasoning": "why you must act now (internal thought)
 }}
 """
         try:
             logger.info(f"Checking if {self.npc_state.name} wants initiative")
-            response = await self._call_claude(prompt=prompt, 
+            response = await self._call_claude(
+                prompt=prompt,
                 response_schema={
                     "type": "object",
                     "properties": {
-                        "should_act": {
-                            "type": "boolean"
-                        },
+                        "should_act": {"type": "boolean"},
                         "action": {
                             "type": "string",
-                            "description": "What you do physically, or null"
+                            "description": "What you do physically, or null",
                         },
                         "reasoning": {
                             "type": "string",
-                            "description": "Your private reasoning"
-                        }
+                            "description": "Your private reasoning",
+                        },
                     },
                     "required": ["should_act", "action", "reasoning"],
-                    "additionalProperties": False
-                    
-                })
+                    "additionalProperties": False,
+                },
+            )
             result = json.loads(response)
 
-            if result.get('should_act'):
+            if result.get("should_act"):
                 logger.info(f" {self.npc_state.name} WANTS TO ACT: {result['action']}")
 
                 return {
-                    'npc_id': self.npc_state.npc_id,
-                    'npc_name': self.npc_state.name,
-                    'action': result['action'],
-                    'reasoning': result['reasoning']
+                    "npc_id": self.npc_state.npc_id,
+                    "npc_name": self.npc_state.name,
+                    "action": result["action"],
+                    "reasoning": result["reasoning"],
                 }
             else:
                 logger.info(f" {self.npc_state.name} does not want to act yet")
                 return None
-            
+
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"{self.npc_state.name} initiative check failed: {e}")
             return None
-        
+
     async def _call_claude(self, prompt: str, response_schema: dict) -> str:
         """
         Call Claude API with NPC's system prompt
@@ -394,18 +420,10 @@ Respond only with valid JSON:
             model=self.model,
             max_tokens=800,
             system=system_prompt,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
+            messages=[{"role": "user", "content": prompt}],
             output_config={
-                "format": {
-                    "type": "json_schema",
-                    "schema": response_schema
-                }
-            }
+                "format": {"type": "json_schema", "schema": response_schema}
+            },
         )
 
         return response.content[0].text

@@ -1,12 +1,13 @@
 from anthropic import Anthropic
-import json
+import json, os
 import logging
 from typing import Dict, List, Optional
 
-from models.game_state import GameState
+from backend.models.game_state import GameState
 
 # Logging of prompts, player actions, and state
 logger = logging.getLogger(__name__)
+
 
 class GMAgent:
     """
@@ -30,7 +31,12 @@ class GMAgent:
         """
         Initialize GM Agent
         """
-        self.client = Anthropic()
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+
+        if not api_key:
+            raise RuntimeError("ANTHROPIC_API_KEY is not set in the environment")
+
+        self.client = Anthropic(api_key=api_key)
         self.model = "claude-sonnet-4-5-20250929"
 
         logger.info("GM Agent initialized")
@@ -40,10 +46,10 @@ class GMAgent:
         GM's system prompt defining its role and knowledge
 
         GM needs to know everything to arbitrate fairly
-        
+
         Args:
             game_state: Current game state
-        
+
         Returns:
             str: Complete system prompt with all context
         """
@@ -66,17 +72,22 @@ class GMAgent:
         {game_state.situation_description}
 
         NPCs (you know their secrets):
-        {json.dumps({
-            npc_id: {
-                'name': npc.name,
-                'goal': npc.current_goal,
-                'secrets': npc.secrets,
-                'emotional_state': npc.emotional_state,
-                'urgency': npc.urgency_level,
-                'knowledge': npc.knowledge[-3:] # last 3 things they know
-            }
-            for npc_id, npc in game_state.npcs.items()
-        }, indent=2)}
+        {
+            json.dumps(
+                {
+                    npc_id: {
+                        "name": npc.name,
+                        "goal": npc.current_goal,
+                        "secrets": npc.secrets,
+                        "emotional_state": npc.emotional_state,
+                        "urgency": npc.urgency_level,
+                        "knowledge": npc.knowledge[-3:],
+                    }
+                    for npc_id, npc in game_state.npcs.items()
+                },
+                indent=2,
+            )
+        }
 
         CRITICAL RULES:
         - NPCs only know what they've witnessed or been told (limited knowledge)
@@ -88,8 +99,10 @@ class GMAgent:
 
         Always respond in valid JSON format
         """
-    
-    async def interpret_moment(self, player_input: Optional[str], initiator: str, game_state: GameState) -> dict:
+
+    async def interpret_moment(
+        self, player_input: Optional[str], initiator: str, game_state: GameState
+    ) -> dict:
         """
         Interpret what's happening this moment
 
@@ -118,7 +131,9 @@ class GMAgent:
             moment_description = f"PLAYER ACTION: {player_input}"
         else:
             npc_name = game_state.npcs[initiator].name
-            moment_description = f"NPC '{npc_name}' is taking initiative based on their high urgency"
+            moment_description = (
+                f"NPC '{npc_name}' is taking initiative based on their high urgency"
+            )
 
         prompt = f"""
 CURRENT SITUATION:
@@ -128,14 +143,20 @@ Current Tension: {game_state.tension_level}/10
 Scene Energy: {game_state.scene_energy}
 
 NPCS PRESENT:
-{json.dumps({
-    npc_id: {
-        'name': npc.name,
-        'emotional_state': npc.emotional_state,
-        'urgency': npc.urgency_level,
-        'location': npc.location
-    } for npc_id, npc in game_state.npcs.items()
-}, indent=2)}
+{
+            json.dumps(
+                {
+                    npc_id: {
+                        "name": npc.name,
+                        "emotional_state": npc.emotional_state,
+                        "urgency": npc.urgency_level,
+                        "location": npc.location,
+                    }
+                    for npc_id, npc in game_state.npcs.items()
+                },
+                indent=2,
+            )
+        }
 
 RECENT EVENTS (what just happened):
 {game_state.get_recent_narrative(3)}
@@ -160,7 +181,7 @@ Respond ONLY with valid JSON without any markdown or formatting:
     "tension_delta": -2 to +2
 }}
 """
-        
+
         try:
             logger.info("GM interpreting moment.")
             response = await self._call_claude(
@@ -171,29 +192,35 @@ Respond ONLY with valid JSON without any markdown or formatting:
                     "properties": {
                         "what_happens": {
                             "type": "string",
-                            "description": "Objective, specific description of the action"
+                            "description": "Objective, specific description of the action",
                         },
                         "affected_npcs": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "NPC IDs who would notice or be affected"
+                            "description": "NPC IDs who would notice or be affected",
                         },
                         "context_for_npcs": {
                             "type": "string",
-                            "description": "What the affected NPCs would perceive"
+                            "description": "What the affected NPCs would perceive",
                         },
                         "consequences": {
                             "type": "string",
-                            "description": "Immediate physical/environmental changes"
+                            "description": "Immediate physical/environmental changes",
                         },
                         "tension_delta": {
                             "type": "integer",
                             "description": "Change in tension level",
-                        }
+                        },
                     },
-                    "required": ["what_happens", "affected_npcs", "context_for_npcs", "consequences", "tension_delta"],
-                    "additionalProperties": False
-                }
+                    "required": [
+                        "what_happens",
+                        "affected_npcs",
+                        "context_for_npcs",
+                        "consequences",
+                        "tension_delta",
+                    ],
+                    "additionalProperties": False,
+                },
             )
             result = json.loads(response)
 
@@ -202,31 +229,35 @@ Respond ONLY with valid JSON without any markdown or formatting:
             logger.info(f"Tension change: {result['tension_delta']:+d}")
 
             return result
-        
+
         except json.JSONDecodeError as e:
             logger.error(f"GM interpretation JSON parse failed: {e}")
             logger.error(f"Raw response: {response[:200]}...")
 
             # fallback to basic intepretation
             return self._fallback_interpretation(player_input, initiator, game_state)
-        
-    def _fallback_interpretation(self, player_input: Optional[str], initiator: str, game_state: GameState) -> dict:
+
+    def _fallback_interpretation(
+        self, player_input: Optional[str], initiator: str, game_state: GameState
+    ) -> dict:
         """
         Fallback if JSON parsing fails
-        
-        Returns basic interpretation so game can continue 
+
+        Returns basic interpretation so game can continue
         """
         logger.warning("Using fallback interpretation")
 
         return {
             "what_happens": player_input or f"{initiator} takes action",
-            "affected_npcs": list(game_state.npcs.keys()), # all NPCs
+            "affected_npcs": list(game_state.npcs.keys()),  # all NPCs
             "context_for_npcs": player_input or "Something happens",
             "consequences": "The situation evolves",
-            "tension_delta": 0
+            "tension_delta": 0,
         }
-    
-    async def synthesize_narrative(self, interpretation: dict, npc_responses: List[dict], game_state: GameState) -> dict:
+
+    async def synthesize_narrative(
+        self, interpretation: dict, npc_responses: List[dict], game_state: GameState
+    ) -> dict:
         """
         Combine everything into coherent objective narrative
 
@@ -252,20 +283,20 @@ Respond ONLY with valid JSON without any markdown or formatting:
                 'narrative': str (objective prose),
                 'tension_level': int (1-10),
                 'scene_energy': str (building/plateu/climactic/resolving),
-                'notable_changes': list[str]    
+                'notable_changes': list[str]
             }
         """
         # Format NPC responses for prompt
         npc_reactions = []
         for response in npc_responses:
             reaction = f"{response['npc_name']}: "
-            if response.get('dialogue'):
+            if response.get("dialogue"):
                 reaction += f'Says: "{response["dialogue"]}"'
-            if response.get('action'):
-                if response.get('dialogue'):
+            if response.get("action"):
+                if response.get("dialogue"):
                     reaction += f" AND "
                 reaction += f"Does: {response['action']}"
-            if not response.get('dialogue') and not response.get('action'):
+            if not response.get("dialogue") and not response.get("action"):
                 reaction += "Observes silently"
 
             npc_reactions.append(reaction)
@@ -274,7 +305,7 @@ Respond ONLY with valid JSON without any markdown or formatting:
 
         prompt = f"""
 WHAT HAPPENED (your interpretation):
-{interpretation['what_happens']}
+{interpretation["what_happens"]}
 
 NPC REACTIONS:
 {npc_reactions_text}
@@ -318,7 +349,7 @@ Respond only with valid JSON:
                     "properties": {
                         "narrative": {
                             "type": "string",
-                            "description": "Vivid, specific, objective prose description (3-5 sentences)"
+                            "description": "Vivid, specific, objective prose description (3-5 sentences)",
                         },
                         "tension_level": {
                             "type": "integer",
@@ -327,21 +358,28 @@ Respond only with valid JSON:
                         "scene_energy": {
                             "type": "string",
                             "enum": ["building", "plateu", "climactic", "resolving"],
-                            "description": "Current scene energy state"
+                            "description": "Current scene energy state",
                         },
                         "notable_changes": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "Specific state changes"
-                        }
+                            "description": "Specific state changes",
+                        },
                     },
-                    "required": ["narrative", "tension_level", "scene_energy", "notable_changes"],
-                    "additionalProperties": False
-                }
+                    "required": [
+                        "narrative",
+                        "tension_level",
+                        "scene_energy",
+                        "notable_changes",
+                    ],
+                    "additionalProperties": False,
+                },
             )
             result = json.loads(response)
 
-            logger.info(f"GM narrative created (tension: {result['tension_level']}, energy: {result['scene_energy']})")
+            logger.info(
+                f"GM narrative created (tension: {result['tension_level']}, energy: {result['scene_energy']})"
+            )
 
             return result
 
@@ -350,30 +388,32 @@ Respond only with valid JSON:
             logger.error(f"Raw response: {response[:200]}...")
 
             return self._fallback_narrative(interpretation, npc_responses)
-        
-    def _fallback_narrative(self, interpretation: dict, npc_responses: List[dict]) -> dict:
+
+    def _fallback_narrative(
+        self, interpretation: dict, npc_responses: List[dict]
+    ) -> dict:
         """
         Fallback narrative if JSON parsing fails
         """
         logger.warning("Using fallback narrative")
 
-        narrative = interpretation['what_happens']
+        narrative = interpretation["what_happens"]
 
         if npc_responses:
             narrative += "\n\n"
             for response in npc_responses:
-                if response.get('dialogue'):
-                    narrative += f"{response['npc_name']}: \"{response['dialogue']}\""
-                elif response.get('action'):
+                if response.get("dialogue"):
+                    narrative += f'{response["npc_name"]}: "{response["dialogue"]}"'
+                elif response.get("action"):
                     narrative += f"{response['npc_name']} {response['action']}."
 
         return {
-            'narrative': narrative,
-            'tension_level': 5,
-            'scene_energy': 'plateu',
-            'notable_changes': []
+            "narrative": narrative,
+            "tension_level": 5,
+            "scene_energy": "plateu",
+            "notable_changes": [],
         }
-    
+
     async def check_scene_status(self, game_state: GameState) -> dict:
         """
         Monitor scene health and progression
@@ -409,14 +449,20 @@ RECENT EVENTSS:
 {game_state.get_recent_narrative(5)}
 
 NPC STATES:
-{json.dumps({
-    npc_id: {
-        'goal': npc.current_goal,
-        'goal_status': npc.goal_status,
-        'urgency': npc.urgency_level,
-        'emotional_state': npc.emotional_state
-    } for npc_id, npc in game_state.npcs.items()
-}, indent=2)}
+{
+            json.dumps(
+                {
+                    npc_id: {
+                        "goal": npc.current_goal,
+                        "goal_status": npc.goal_status,
+                        "urgency": npc.urgency_level,
+                        "emotional_state": npc.emotional_state,
+                    }
+                    for npc_id, npc in game_state.npcs.items()
+                },
+                indent=2,
+            )
+        }
 
 Assess the scene objectively:
 1. ENERGY: Is tension/action rising, flat, falling, or completely stalled?
@@ -455,48 +501,62 @@ Respond only with valid JSON:
                         "energy_assessment": {
                             "type": "string",
                             "enum": ["rising", "plateu", "falling", "stalled"],
-                            "description": "Current energy trend"
+                            "description": "Current energy trend",
                         },
                         "needs_stimulus": {
                             "type": "boolean",
-                            "description": "Whether external stimulus is needed"
+                            "description": "Whether external stimulus is needed",
                         },
                         "stimulus_suggestion": {
                             "type": "string",
-                            "description": "What external event could inject energy"
+                            "description": "What external event could inject energy",
                         },
                         "approaching_ending": {
                             "type": "boolean",
-                            "description": "Whether scene is nearing conclusion"
+                            "description": "Whether scene is nearing conclusion",
                         },
                         "ending_type": {
                             "type": "string",
-                            "enum": ["violence", "resolution", "departure", "stalemate", "null"],
-                            "description": "Type of ending if approaching"
-                        }
+                            "enum": [
+                                "violence",
+                                "resolution",
+                                "departure",
+                                "stalemate",
+                                "null",
+                            ],
+                            "description": "Type of ending if approaching",
+                        },
                     },
-                    "required": ["energy_assessment", "needs_stimulus", "stimulus_suggestion", "approaching_ending", "ending_type"],
-                    "additionalProperties": False
-                }
+                    "required": [
+                        "energy_assessment",
+                        "needs_stimulus",
+                        "stimulus_suggestion",
+                        "approaching_ending",
+                        "ending_type",
+                    ],
+                    "additionalProperties": False,
+                },
             )
             result = json.loads(response)
 
-            logger.info(f"Scene status: {result['energy_assessment']}, ending: {result['approaching_ending']}")
+            logger.info(
+                f"Scene status: {result['energy_assessment']}, ending: {result['approaching_ending']}"
+            )
 
             return result
-        
+
         except json.JSONDecodeError as e:
             logger.error(f"GM scene check JSON parse failed: {e}")
 
             # Default scene fallback
             return {
-                'energy_assessment': 'plateu',
-                'needs_stimulus': False,
-                'stimulus_suggestion': '',
-                'approaching_ending': False,
-                'ending_type': None
+                "energy_assessment": "plateu",
+                "needs_stimulus": False,
+                "stimulus_suggestion": "",
+                "approaching_ending": False,
+                "ending_type": None,
             }
-        
+
     async def generate_stimulus(self, game_state: GameState) -> str:
         """
         Generate external event to inject energy when scene stalls
@@ -552,27 +612,29 @@ Respond only with valid JSON:
                     "properties": {
                         "stimulus": {
                             "type": "string",
-                            "description": "One sentence description of what happened"
+                            "description": "One sentence description of what happened",
                         }
                     },
                     "required": ["stimulus"],
-                    "additionalProperties": False
-                }
+                    "additionalProperties": False,
+                },
             )
             result = json.loads(response)
 
-            stimulus = result['stimulus']
+            stimulus = result["stimulus"]
             logger.info(f"Stimulus: {stimulus}")
 
             return stimulus
-        
+
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"Stimulus generation failed: {e}")
 
             # Default stimulus fallback
             return "A loud crash from outside makes everyone freeze."
-        
-    async def _call_claude(self, prompt: str, game_state: GameState, response_schema: dict) -> str:
+
+    async def _call_claude(
+        self, prompt: str, game_state: GameState, response_schema: dict
+    ) -> str:
         """
         Call Claude API wih GM's system prompt
 
@@ -589,18 +651,10 @@ Respond only with valid JSON:
             model=self.model,
             max_tokens=2000,
             system=system_prompt,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
+            messages=[{"role": "user", "content": prompt}],
             output_config={
-                "format": {
-                    "type": "json_schema",
-                    "schema": response_schema
-                }
-            }
+                "format": {"type": "json_schema", "schema": response_schema}
+            },
         )
 
         return response.content[0].text

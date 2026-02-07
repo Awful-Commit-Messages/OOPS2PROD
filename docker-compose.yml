@@ -11,5 +11,5 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     restart: unless-stopped

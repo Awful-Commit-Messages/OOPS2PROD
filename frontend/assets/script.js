@@ -13,8 +13,17 @@ logger_button.addEventListener("click", function () {
     logger_button.textContent = isHidden ? "Logger (on)" : "Logger (off)";
 });
 
-
 start_button.addEventListener("click", function () {
+
+    fetch("/api/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            event: {
+                message: "Hi I'd like to start a game please :)"
+            }
+        })
+    });
 
     // fade out button
     start_button.style.opacity = "0";
@@ -86,7 +95,7 @@ textarea.addEventListener("keydown", async (e) => {
 
         console.log(lastItem);
 
-        textarea.value += "\n";
+        textarea.value += "\n\n";
         const thinkingStart = textarea.value.length;
 
         textarea.value += "Thinking";
@@ -97,7 +106,9 @@ textarea.addEventListener("keydown", async (e) => {
 
             stopThinking();
 
-            await ghostTypeTextarea(textarea, response.message);
+            textarea.value += "\nNarrator: "
+            await ghostTypeTextarea(textarea, response.narration);
+            appendToLogger(response);
 
         } catch (err) {
             stopThinking();
@@ -114,7 +125,7 @@ async function ghostTypeTextarea(textarea, text, i = 0) {
 
         setTimeout(
             () => ghostTypeTextarea(textarea, text, i + 1),
-            50
+            18
         );
     } else {
         textarea.value += "\n\n";
@@ -149,29 +160,52 @@ async function sendPayload(message) {
 }
 
 function startThinkingDots(textarea, startIndex) {
+    const phrases = [
+        "Interpreting the moment",
+        "Reading between the lines",
+        "Weaving the narrative",
+        "Tracking tension",
+        "Reconstructing intent",
+        "Watching reactions carefully",
+        "Letting the scene unfold",
+        "This is getting interesting",
+        "Something is taking shape"
+    ];
+
+    let phraseIndex = Math.floor(Math.random() * phrases.length);
+    let currentPhrase = phrases[phraseIndex];
     let dots = 0;
-    const maxDots = 6;
+    const maxDots = 3;
+
+    let ticks = 0;
 
     const intervalId = setInterval(() => {
+        ticks++;
+
+        // advance dots smoothly
         dots = (dots + 1) % (maxDots + 1);
 
-        // keep everything BEFORE "Thinking"
-        textarea.value = textarea.value.slice(0, startIndex);
+        // change phrase only every ~6–8 seconds
+        if (ticks % 18 === 0) {
+            phraseIndex = (phraseIndex + 1) % phrases.length;
+            currentPhrase = phrases[phraseIndex];
+            dots = 0;
+        }
 
-        textarea.value += "Thinking" + ".".repeat(dots);
+        textarea.value = textarea.value.slice(0, startIndex);
+        textarea.value += currentPhrase + ".".repeat(dots);
         textarea.scrollTop = textarea.scrollHeight;
-    }, 369);
+    }, 400);
 
     return () => {
         clearInterval(intervalId);
-        // remove "Thinking..." after done thinking
         textarea.value = textarea.value.slice(0, startIndex);
     };
 }
 
 let isDragging = false;
 let startY = 0;
-let startHeight = 0;
+startHeight = logger_display.getBoundingClientRect().height;
 
 logger_resize_handle.addEventListener("mousedown", (e) => {
     isDragging = true;
@@ -187,7 +221,6 @@ document.addEventListener("mousemove", (e) => {
     const delta = startY - e.clientY;
     const newHeight = startHeight + delta;
 
-    // clamp height
     if (newHeight < 80) return;
     if (newHeight > main_page.offsetHeight - 100) return;
 
@@ -198,3 +231,101 @@ document.addEventListener("mouseup", () => {
     isDragging = false;
     document.body.style.userSelect = "";
 });
+function appendToLogger(data) {
+
+    const entry = document.createElement("div");
+    entry.style.padding = "14px";
+    entry.style.borderBottom = "1px solid rgba(125,211,252,0.25)";
+    entry.style.fontSize = "12px";
+    entry.style.lineHeight = "1.45";
+    entry.style.whiteSpace = "pre-wrap";
+    entry.style.fontFamily = "monospace";
+    entry.style.color = "#7dd3fc";
+    entry.style.wordBreak = "break-word";
+
+    const lines = [];
+
+    // Header
+    const turn = data.state?.moment_count ?? "?";
+    lines.push(`TURN ${turn}`);
+    lines.push("────────────────────────");
+
+    // NPC RESPONSES
+    if (data.npc_responses?.length) {
+        lines.push("\nNPC RESPONSES");
+        for (const npc of data.npc_responses) {
+            lines.push(`- ${npc.npc_name}`);
+            if (npc.dialogue) lines.push(`  Dialogue: "${npc.dialogue}"`);
+            if (npc.action) lines.push(`  Action: ${npc.action}`);
+            if (npc.emotional_state) lines.push(`  Emotion: ${npc.emotional_state}`);
+            if (npc.urgency_change !== undefined)
+                lines.push(`  Urgency Δ: ${npc.urgency_change > 0 ? "+" : ""}${npc.urgency_change}`);
+        }
+    }
+
+    // SCENE STATUS
+    if (data.scene_status) {
+        lines.push("\nSCENE STATUS");
+        const s = data.scene_status;
+        if (s.energy_assessment) lines.push(`Energy: ${s.energy_assessment}`);
+        if (s.approaching_ending)
+            lines.push(`Ending: ${s.ending_type}`);
+    }
+
+    // WORLD STATE
+    if (data.state) {
+        lines.push("\nWORLD STATE");
+        if (data.state.tension_level !== undefined)
+            lines.push(`Tension: ${data.state.tension_level}`);
+        if (data.state.scene_energy)
+            lines.push(`Scene Energy: ${data.state.scene_energy}`);
+        if (data.state.player_location)
+            lines.push(`Location: ${data.state.player_location}`);
+    }
+
+    // EXTERNAL EVENT
+    if (data.external_event) {
+        lines.push("\nEXTERNAL EVENT");
+        lines.push(data.external_event);
+    }
+
+    // GM DEBUG (collapsed mentally but readable)
+    if (data.debug) {
+        lines.push("\nGM DEBUG");
+
+        if (data.debug.gm_objective_truth) {
+            lines.push("Objective Truth:");
+            lines.push(indentBlock(data.debug.gm_objective_truth, 2));
+        }
+
+        if (data.debug.narrator_noticed?.length) {
+            lines.push("Narrator Noticed:");
+            for (const item of data.debug.narrator_noticed) {
+                lines.push(`  - ${item}`);
+            }
+        }
+
+        if (data.debug.narrator_missed?.length) {
+            lines.push("Narrator Missed:");
+            for (const item of data.debug.narrator_missed) {
+                lines.push(`  - ${item}`);
+            }
+        }
+    }
+
+    entry.textContent = lines.join("\n");
+    logger_display.appendChild(entry);
+
+    // Only auto-scroll if logger is open
+    if (logger_display.style.display !== "none") {
+        logger_display.scrollTop = logger_display.scrollHeight;
+    }
+
+}
+function indentBlock(text, spaces) {
+    const pad = " ".repeat(spaces);
+    return text
+        .split("\n")
+        .map(line => pad + line)
+        .join("\n");
+}

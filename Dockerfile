@@ -7,21 +7,20 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install system dependencies:
-RUN apt-get update && apt-get install -y \
-    curl \ 
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first:
-COPY backend/requirements.txt .
-
-# Install the Python dependencies:
+# Copy and install Python dependencies
+COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the backend code:
-COPY backend/ ./backend/
+# Copy backend Python files to /app root
+COPY backend/ ./backend
 
-# Copy frontend static files:
-COPY frontend/ ./frontend/
+# Copy frontend directory
+COPY frontend ./frontend
+
+# Copy config.py
+COPY config.py .
 
 # Expose the network port:
 EXPOSE 8000
@@ -31,5 +30,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/ || exit 1
 
 # Run the application:
-WORKDIR /app/backend
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
