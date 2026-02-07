@@ -527,3 +527,16 @@ class OrganicMultiAgentEngine:
         )
 
         logger.info(f"SCENE CONCLUDED: {self.state.conclusion_type}")
+
+    def _force_conclusion(self):
+        """
+        Safety rail: Forces the conclusion
+
+        Called when moment_count >= max_moments
+        """
+
+        self.state.scene_concluded = True
+        self.state.conclusion_type = "time_limit"
+        self.state.conclusion_description = "The situation reached a breaking point."
+
+        logger.warning("SCENE FORCED-CONCLUDED (safety rail)")
