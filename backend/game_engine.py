@@ -319,3 +319,27 @@ async def process_moment(self, player_input: Optional[str] = None) -> dict:
     )
     self.state.scene_energy = gm_narrative.get("scene_energy", self.state.scene_energy)
     logger.info(f"Scene energy: {self.state.scene_energy}")
+
+    # =========================================================================
+    # PHASE 4: NARRATOR FILTERS (SUBJECTIVE RETELLING)
+    # =========================================================================
+
+    logger.info("Phase 4: Narrator is retelling the story through a distorted lens...")
+    narrator_output = await self.narrator_agent.narrate_moment(
+        {
+            "what_happens": gm_narrative["narrative"],
+            "tension": self.state.tension_level,
+            "energy": self.state.scene_energy,
+        },
+        npc_responses,
+        self.state,
+    )
+
+    logger.info(
+        f"Narrator reliability: {narrator_output.get('reliability_check', 'unknown')}/10"
+    )
+
+    # Check if the narrator wants to add an aside:
+    narrator_aside = await self.narrator_agent.narrator_aside(self.state)
+    if narrator_aside:
+        logger.info(f"Narrator aside: {narrator_aside[:50]}...")
