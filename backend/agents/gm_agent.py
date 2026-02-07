@@ -232,7 +232,7 @@ Respond ONLY with valid JSON without any markdown or formatting:
 
         The GM takes:
         - Their interpretation of what happened
-        - Hwo each NPC reacted
+        - How each NPC reacted
         - Current scene state
 
         And creates:
@@ -257,7 +257,7 @@ Respond ONLY with valid JSON without any markdown or formatting:
         """
         # Format NPC responses for prompt
         npc_reactions = []
-        for reponse in npc_responses:
+        for response in npc_responses:
             reaction = f"{response['npc_name']}: "
             if response.get('dialogue'):
                 reaction += f'Says: "{response["dialogue"]}"'
@@ -274,7 +274,7 @@ Respond ONLY with valid JSON without any markdown or formatting:
 
         prompt = f"""
 WHAT HAPPENED (your interpretation):
-{interpretation['what_happened']}
+{interpretation['what_happens']}
 
 NPC REACTIONS:
 {npc_reactions_text}
@@ -323,8 +323,6 @@ Respond only with valid JSON:
                         "tension_level": {
                             "type": "integer",
                             "description": "Current tension level",
-                            "minimum": 1,
-                            "maximum": 10
                         },
                         "scene_energy": {
                             "type": "string",

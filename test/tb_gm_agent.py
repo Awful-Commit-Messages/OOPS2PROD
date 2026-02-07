@@ -29,5 +29,18 @@ async def main():
     result = await gm.interpret_moment(player_input = None, initiator=n1.npc_id, game_state=gs)
     print(result)
 
+    interpretation = await gm.interpret_moment(player_input="Say hello and pet the closest cat", initiator="player", game_state=gs)
+    responses = [
+        {
+            'npc_name': "Gustav Gorfoffensonn",
+            'dialogue': "Hello, how are you?",
+            'action': "brushes his hand through his hair"
+        }
+    ]
+    result = await gm.synthesize_narrative(interpretation=interpretation, npc_responses=responses, game_state=gs)
+    print(result)
+
+
+
 asyncio.run(main())
 
