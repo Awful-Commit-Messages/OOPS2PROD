@@ -367,7 +367,7 @@ class OrganicMultiAgentEngine:
         # =========================================================================
 
         logger.info("Phase 6: Checking for immediate NPC actions...")
-        immediate_actions = await self._check_immeidate_initiatives()
+        immediate_actions = await self._check_immediate_initiatives()
         if immediate_actions:
             logger.info(
                 f"Immediate actions: {len(immediate_actions)} NPC(s) want to act."
@@ -481,3 +481,24 @@ class OrganicMultiAgentEngine:
 
         logger.info("No NPCs want to act autonomously.")
         return None
+
+    async def _check_immediate_initiatives(self) -> List[dict]:
+        """
+        Checks if any NPCs want to act *immediately* after the current moment.
+
+        Only checks NPCs with urgency >= 9 (critical urgency)
+
+        Returns:
+            list[dict]: list of immediate actions NPCs want to take
+        """
+
+        immediate = []
+
+        for npc_id, npc in self.state.npcs.items():
+            # Only *very* urgent NPCs act immediately:
+            if npc.urgency_level >= 9:
+                initiative = await self.npc_agents[npc_id].check_initiative(self.state)
+                if initiative:
+                    immediate.append(initiative)
+
+        return immediate
