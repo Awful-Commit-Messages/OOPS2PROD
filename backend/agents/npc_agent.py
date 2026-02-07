@@ -250,3 +250,83 @@ Respond only with valid JSON:
             'urgency_change': 0,
             'wants_to_act_next': False
         }
+    
+    async def check_initiative(self, game_state: GameState) -> Optional[dict]:
+        """
+        Check if NPC wants to act autonomously
+
+        This is called when:
+        - NPC's urgency >= 7 (high urgency)
+        - No player action (checking if NPCs want to drive scene)
+
+        The NPC decides:
+        - Do I need to act right now?
+        - Will waiting make things worse?
+        - Is this my opportunity?
+
+        Args:
+            game_state: Current game state
+
+        Return:
+            dict or None: {
+                'npc_id': str,
+                'npc_name': str,
+                'action': str (what they want to do),
+                'reasoning': str (why now)
+            }
+            Returns none if NPC doesn't want to act
+        """
+        prompt = f"""
+CURRENT SITUATION:
+- Your goal: {self.npc_state.current_goal}
+- Your urgency: {self.npc_state.urgency_level}/10 (HIGH - you're feeling pressure)
+- Your emotional state: {self.npc_state.emotional_state}
+- Your goal status: {self.npc_state.goal_status}
+
+RECENT EVENTS YOU KNOW ABOUT:
+{"\n".join(self.npc_state.knowledge[-3:]) if self.npc_state.knowledge else "Nothing"}
+
+Your urgency is HIGH. Do you need to take action right now to pursue your goal?
+
+This is your chance to drive the scene. The player isn't acting - should you?
+
+Consider:
+- Are you threatened or in danger?
+- Is there an opportunity you must seize?
+- Will waiting make things worse?
+- Are you about to lose what you want?
+- Is time running out?
+- Are you too angry/desperate to wait?
+
+If yes, what specific action do you take?
+Be concrete: Not "I do something" but "I pull out my gun and point it at Michael"
+
+Respond only with valid JSON:
+{{
+    "should_act": true/false,
+    "action": "sepcific action you take (if acting),
+    "reasoning": "why you must act now (internal thought)
+}}
+"""
+        try:
+            logger.info(f"Checking if {self.npc_state.name} wants initiative")
+            response = await self._call_claude(prompt)
+            result = json.load(response)
+
+            if result.get('should_act'):
+                logger.info(f" {self.npc_state.name} WANTS TO ACT: {result['action']}")
+
+                return {
+                    'npc_id': self.npc_state.npc_id,
+                    'npc_name': self.npc_state.npc_name,
+                    'action': result['action'],
+                    'reasoning': result['reasoning']
+                }
+            else:
+                logger.info(f" {self.npc_state.name} does not want to act yet")
+                return None
+            
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(f"{self.npc_state.name} initiative check failed: {e}")
+            return None
+        
