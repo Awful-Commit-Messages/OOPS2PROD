@@ -12,7 +12,4 @@ services:
       - "8000:8000"
     environment:
       - API_KEY=${ANTHROPIC_API_KEY}
-    volumes:
-      - ./backend:/app
-      - ./frontend:/app/frontend
     restart: unless-stopped
