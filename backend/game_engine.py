@@ -432,3 +432,52 @@ class OrganicMultiAgentEngine:
                 "narrator_interpretation": narrator_output("your_interpretation", ""),
             },
         }
+
+    # =========================================================================
+    # HELPER FUNCTIONS
+    # =========================================================================
+
+    async def _find_urgent_npc(self) -> Optional[str]:
+        """
+        Finds if any NPC urgently wants to act autonomously.
+
+        Process:
+        1. Get all NPCs with urgency >= 7.
+        2. Ask each if they want to act *now*.
+        3. Return first one that says 'yes'.
+
+        Returns:
+            str: NPC ID that wants to act, or None
+        """
+
+        # Filter to high-urgency NPCs only:
+        urgent_npcs = [
+            (npc_id, npc)
+            for npc_id, npc in self.state.npcs.items()
+            if npc.urgency_level >= 7
+        ]
+
+        if not urgent_npcs:
+            logger.info("No urgent NPCs found.")
+            return None
+
+        logger.info(f"Checking {len(urgent_npcs)} urgent NPC(s) for initiative...")
+
+        # Ask each urgent NPC if they want to act (in parallel):
+        initiative_tasks = [
+            self.npc_agents[npc_id].check_initiative(self.state)
+            for npc_id, _ in urgent_npcs
+        ]
+
+        initiatives = await asyncio.gather(*initiative_tasks)
+
+        # Return the first NPC that wants to act:
+        for initiative in initiatives:
+            if initiative:
+                logger.info(
+                    f"{initiative['npc_name']} wants to act: {initiative['action']}"
+                )
+                return initiative["npc_id"]
+
+        logger.info("No NPCs want to act autonomously.")
+        return None
