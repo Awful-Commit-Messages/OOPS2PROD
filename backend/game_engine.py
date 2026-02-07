@@ -356,3 +356,12 @@ async def process_moment(self, player_input: Optional[str] = None) -> dict:
     if scene_status.get("approaching_ending"):
         logger.info(f"Scene ending detected: {scene_status.get('ending_type')}")
         self._conclude_scene(scene_status.get("ending_type"))
+
+    # =========================================================================
+    # PHASE 6: CHECK FOR IMMEDIATE NPC INITIATIVES
+    # =========================================================================
+
+    logger.info("Phase 6: Checking for immediate NPC actions...")
+    immediate_actions = await self._check_immeidate_initiatives()
+    if immediate_actions:
+        logger.info(f"Immediate actions: {len(immediate_actions)} NPC(s) want to act.")
