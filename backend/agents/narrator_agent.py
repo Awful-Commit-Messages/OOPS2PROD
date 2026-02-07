@@ -114,4 +114,60 @@ Repond only with valid JSON:
             logger.error(f"Failed to parse narrator output: {e}")
             return self._fallback_narration(gm_objective_facts)
         
-    
+    async def narrator_aside(self, game_state: GameState) -> Optional[str]:
+        """
+        Sometimes narrator adds their own commentary unprompted
+        Triggered by high tension or narrator's obsessions
+        """
+        # only do this occassionally
+        if game_state.tension_level < 7:
+            return None
+        
+        prompt = f"""
+The tension is HIGH ({game_state.tension_level}/10)
+
+RECENT EVENTS:
+{game_state.get_recent_narrative(3)}
+
+Do you want to add a brief aside or commentary to the player?
+This  could be:
+- A warning based on your experience
+- An observation based on your obsessions
+- A personal memory that this reminds you of
+- Your theory about what's really happening
+
+Keep it short (1-2 sentences). Make it fit your personality and style.
+
+Respond only with valid JSON:
+{{
+    "should_add_aside": true/false,
+    "aside_text": "your brief commentary (if adding)"
+}}
+"""
+        
+        try:
+            response = await self._call_claude(prompt=prompt, response_schema = {
+
+            })
+            result = json.loads(response)
+
+            if result.get('should_add_aside')
+                return result.get('aside_text')
+            return None
+        
+        except:
+            return None
+        
+    def _filter_by_perception(self, objective_facts: dict) -> dict:
+        """
+        Filter facts based on narrator's blind spots
+        """
+        filtered = objective_facts.copy()
+
+        # remove details related to blind spots
+        description = filtered.get('what_happens', '')
+        for blind_spot in self.narrator_state.blind_spots:
+            if blind_spot.lower() in description.lower():
+                filtered['narrator_might_miss'] = blind_spot
+
+        return filtered
