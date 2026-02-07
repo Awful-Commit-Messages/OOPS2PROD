@@ -4,9 +4,9 @@
 
 ## Our Team
 
-Adrien Abbey
-David Castro
-Rob Pierce
+- Adrien Abbey
+- David Castro
+- Rob Pierce
 
 ## Server Start
 `uvicorn backend.main:app --reload`

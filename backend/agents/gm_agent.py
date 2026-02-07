@@ -163,7 +163,39 @@ Respond ONLY with valid JSON without any markdown or formatting:
         
         try:
             logger.info("GM interpreting moment.")
-            response = await self._call_claude(prompt, game_state)
+            response = await self._call_claude(
+                prompt=prompt,
+                game_state=game_state,
+                response_schema={
+                    "type": "object",
+                    "properties": {
+                        "what_happens": {
+                            "type": "string",
+                            "description": "Objective, specific description of the action"
+                        },
+                        "affected_npcs": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "NPC IDs who would notice or be affected"
+                        },
+                        "context_for_npcs": {
+                            "type": "string",
+                            "description": "What the affected NPCs would perceive"
+                        },
+                        "consequences": {
+                            "type": "string",
+                            "description": "Immediate physical/environmental changes"
+                        },
+                        "tension_delta": {
+                            "type": "integer",
+                            "description": "Change in tension level",
+                            "minimum": -2,
+                            "maximum": 2
+                        }
+                    },
+                    "required": ["what_happens", "affected_npcs", "context_for_npcs", "consequences", "tension_delta"]
+                }
+            )
             result = json.loads(response)
 
             logger.info(f"GM interpretation: {result['what_happens'][:80]}")
@@ -279,7 +311,36 @@ Respond only with valid JSON:
 """
         try:
             logger.info("GM synthesizing narrative")
-            response = await self._call_claude(prompt, game_state)
+            response = await self._call_claude(
+                prompt=prompt,
+                game_state=game_state,
+                response_schema={
+                    "type": "object",
+                    "properties": {
+                        "narrative": {
+                            "type": "string",
+                            "description": "Vivid, specific, objective prose description (3-5 sentences)"
+                        },
+                        "tension_level": {
+                            "type": "integer",
+                            "description": "Current tension level",
+                            "minimum": 1,
+                            "maximum": 10
+                        },
+                        "scene_energy": {
+                            "type": "string",
+                            "enum": ["building", "plateu", "climactic", "resolving"],
+                            "description": "Current scene energy state"
+                        },
+                        "notable_changes": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Specific state changes"
+                        }
+                    },
+                    "required": ["narrative", "tension_level", "scene_energy", "notable_changes"]
+                }
+            )
             result = json.loads(response)
 
             logger.info(f"GM narrative created (tension: {result['tension_level']}, energy: {result['scene_energy']})")
@@ -387,7 +448,38 @@ Respond only with valid JSON:
 """
         try:
             logger.info("GM checking scene status")
-            response = await self._call_claude(prompt, game_state)
+            response = await self._call_claude(
+                prompt=prompt,
+                game_state=game_state,
+                response_schema={
+                    "type": "object",
+                    "properties": {
+                        "energy_assessment": {
+                            "type": "string",
+                            "enum": ["rising", "plateu", "falling", "stalled"],
+                            "description": "Current energy trend"
+                        },
+                        "needs_stimulus": {
+                            "type": "boolean",
+                            "description": "Whether external stimulus is needed"
+                        },
+                        "stimulus_suggestion": {
+                            "type": "string",
+                            "description": "What external event could inject energy"
+                        },
+                        "approaching_ending": {
+                            "type": "boolean",
+                            "description": "Whether scene is nearing conclusion"
+                        },
+                        "ending_type": {
+                            "type": ["string", "null"],
+                            "enum": ["violence", "resolution", "departure", "stalemate", null],
+                            "description": "Type of ending if approaching"
+                        }
+                    },
+                    "required": ["energy_assessment", "needs_stimulus", "stimulus_suggestion", "approaching_ending", "ending_type"]
+                }
+            )
             result = json.loads(response)
 
             logger.info(f"Scene status: {result['energy_assessment']}, ending: {result['approaching_ending']}")
@@ -453,7 +545,20 @@ Respond only with valid JSON:
 """
         try:
             logger.info("GM generating stimulus")
-            response = await self._call_claude(prompt, game_state)
+            response = await self._call_claude(
+                prompt=prompt,
+                game_state=game_state,
+                response_schema={
+                    "type": "object",
+                    "properties": {
+                        "stimulus": {
+                            "type": "string",
+                            "description": "One sentence description of what happened"
+                        }
+                    },
+                    "required": ["stimulus"]
+                }
+            )
             result = json.loads(response)
 
             stimulus = result['stimulus']
@@ -467,7 +572,7 @@ Respond only with valid JSON:
             # Default stimulus fallback
             return "A loud crash from outside makes everyone freeze."
         
-    async def _call_claude(self, prompt: str, game_state: GameState) -> str:
+    async def _call_claude(self, prompt: str, game_state: GameState, response_schema: dict) -> str:
         """
         Call Claude API wih GM's system prompt
 
@@ -489,7 +594,15 @@ Respond only with valid JSON:
                     "role": "user",
                     "content": prompt
                 }
-            ]
+            ],
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "gm_response",
+                    "strict": True,
+                    "schema": response_schema
+                }
+            }
         )
 
         return response.content[0].text
