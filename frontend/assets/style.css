@@ -31,7 +31,8 @@ canvas {
 
 /* Center box */
 #main_page {
-
+    display: none;
+    opacity: 0;
     background-color: rgba(0, 0, 0, 0.8);
     width: 95%;
     height: 90%;
@@ -50,7 +51,7 @@ canvas {
         0 0 4px rgba(0, 255, 65, 0.5);
 
     transition:
-        opacity 0.5s ease,
+        opacity 0.8s ease,
         width 1.45s cubic-bezier(0.22, 1, 0.36, 1),
         height 1.45s cubic-bezier(0.22, 1, 0.36, 1),
         top 2.95s cubic-bezier(0.22, 1, 0.36, 1),
@@ -59,24 +60,40 @@ canvas {
         box-shadow 1.3s ease;
 }
 
-#start_button{
+#start_button {
     font-family: 'Orbitron', monospace;
     font-weight: bold;
     font-size: 2em;
     letter-spacing: 2px;
+
     display: flex;
-    align-content: center;
-    height: 100px;
-    width: 100px;
-    background-color: pink;
-    border-radius: 30px;
+    align-items: center;
+    justify-content: center;
+
+    height: 82px;
+    width: 200px;
+
+    background-color: black;
+    border-radius: 67px;
+
     color: #0F0;
     border: 1px solid rgb(89, 89, 89);
+
     text-shadow:
-        0 0 4px rgba(0, 255, 65, 0.8),
-        0 0 4px rgba(0, 255, 65, 0.5);
-    transition:
-        opacity 0.5s ease;
+        0 0 6px rgba(0, 255, 65, 0.8),
+        0 0 7px rgba(0, 255, 65, 0.5);
+
+    cursor: pointer;
+
+    /* ANIMATABLE */
+    opacity: 1;
+    transition: opacity 0.9s ease;
+}
+
+/* Hidden state */
+#start_button.hidden {
+    opacity: 0;
+    pointer-events: none; /* optional */
 }
 
 #window_header {

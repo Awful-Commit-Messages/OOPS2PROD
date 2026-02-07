@@ -4,17 +4,49 @@ let logger_button_toggle = false;
 const main_page = document.getElementById("main_page")
 const exit_button = document.getElementById("exit_button")
 
+const start_button = document.getElementById("start_button")
+
+start_button.addEventListener("click", function () {
+
+    // fade out button
+    start_button.style.opacity = "0";
+
+    setTimeout(() => {
+        // AFTER fade out finishes
+        start_button.style.display = "none";
+
+        // show main page (still invisible)
+        main_page.style.display = "block";
+
+        // next frame so opacity transition actually runs
+        setTimeout(() => {
+            main_page.style.opacity = "1";
+        }, 10);
+
+    }, 1000); // matches fade-out duration
+
+});
+
 exit_button.addEventListener("click", function () {
 
-    main_page.style.opacity = "0"
+    // fade out main page
+    main_page.style.opacity = "0";
+
     setTimeout(() => {
+        // AFTER fade out
         main_page.style.display = "none";
-    }, 1000);
 
-    start_button.style.display = ""
-    start_button.style.opacity = "1"
+        // show start button (still invisible first if needed)
+        start_button.style.display = "flex";
 
-})
+        // next tick so opacity transition runs
+        setTimeout(() => {
+            start_button.style.opacity = "1";
+        }, 10);
+
+    }, 1000); // matches fade duration
+
+});
 
 logger_button.addEventListener("click", function () {
     logger_button_toggle = !logger_button_toggle;
