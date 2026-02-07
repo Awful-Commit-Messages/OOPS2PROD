@@ -111,7 +111,7 @@ STAY IN CHARACTER AT ALL TIMES.
 Always respond in valid JSON format.
 """
     
-    def respond_to_moment(self, context: str, game_state: GameState) -> dict:
+    async def respond_to_moment(self, context: str, game_state: GameState) -> dict:
         """
         NPC responds to something that just happened
 
@@ -199,7 +199,7 @@ Respond only with valid JSON:
                 logger.info(f" {self.npc_state.name} says: \"{result['dialogue'][:60]}\"")
             elif result.get('action'):
                 logger.info(f" {self.npc_state.name} does: {result['action'][:60]}\"")
-            else
+            else:
                 logger.info(f" {self.npc_state.name} observes silently")
 
             return result
