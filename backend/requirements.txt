@@ -1,6 +1,6 @@
 # backend/requirements.txt (minimal)
 
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-anthropic==0.39.0
-python-multipart==0.0.9
+fastapi
+uvicorn[standard]
+anthropic
+python-multipart
