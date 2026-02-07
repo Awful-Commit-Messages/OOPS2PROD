@@ -365,3 +365,23 @@ async def process_moment(self, player_input: Optional[str] = None) -> dict:
     immediate_actions = await self._check_immeidate_initiatives()
     if immediate_actions:
         logger.info(f"Immediate actions: {len(immediate_actions)} NPC(s) want to act.")
+
+    # =========================================================================
+    # PHASE 7: INJECT STIMULUS IF STALLING
+    # =========================================================================
+
+    external_event = None
+    if scene_status.get("energy_assessment") == "stalled" and scene_status.get(
+        "need_stimulus"
+    ):
+        logger.info("Phase 7: Scene stalling - injecting stimulus...")
+        external_event = await self.gm_agent.generate_stimulus(self.state)
+
+        # Log the stimulus
+        self.state.log_event(
+            event_type="external",
+            actor="environment",
+            description=external_event,
+            location=self.state.player_location,
+        )
+        logger.info(f"Stimulus: {external_event}")
