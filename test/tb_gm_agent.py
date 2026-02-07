@@ -26,10 +26,9 @@ gs.npcs[n2.npc_id] = n2
 
 async def main():
     gm = GMAgent()
-    result = await gm.interpret_moment(player_input = None, initiator=n1.npc_id, game_state=gs)
-    print(result)
+    interpretation = await gm.interpret_moment(player_input = None, initiator=n1.npc_id, game_state=gs)
+    print("interpretation: ", interpretation)
 
-    interpretation = await gm.interpret_moment(player_input="Say hello and pet the closest cat", initiator="player", game_state=gs)
     responses = [
         {
             'npc_name': "Gustav Gorfoffensonn",
@@ -37,8 +36,15 @@ async def main():
             'action': "brushes his hand through his hair"
         }
     ]
-    result = await gm.synthesize_narrative(interpretation=interpretation, npc_responses=responses, game_state=gs)
-    print(result)
+    narrative = await gm.synthesize_narrative(interpretation=interpretation, npc_responses=responses, game_state=gs)
+    print("narrative: ", narrative)
+
+    scene_status = await gm.check_scene_status(game_state=gs)
+    print("scene_status: ", scene_status)
+
+    stimulus = await gm.generate_stimulus(game_state=gs)
+    print("stimulus: ", stimulus)
+
 
 
 

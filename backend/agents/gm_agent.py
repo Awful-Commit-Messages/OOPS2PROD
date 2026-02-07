@@ -470,7 +470,7 @@ Respond only with valid JSON:
                             "description": "Whether scene is nearing conclusion"
                         },
                         "ending_type": {
-                            "type": ["string", "null"],
+                            "type": "string",
                             "enum": ["violence", "resolution", "departure", "stalemate", "null"],
                             "description": "Type of ending if approaching"
                         }
