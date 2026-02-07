@@ -39,8 +39,8 @@ def status():
     }
     
 @api.post("/start")
-def start_game():
-    return engine.start_game()
+async def start_game():
+    return await engine.start_game()
 
 @api.post("/play")
 async def play(request: Request):
