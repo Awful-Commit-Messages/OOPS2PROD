@@ -39,8 +39,10 @@ def status():
     }
     
 @api.post("/start")
-async def start_game():
-    return await engine.start_game()
+def start_game():
+    start = engine.start_game()
+    print(start)
+    return start
 
 @api.post("/play")
 async def play(request: Request):
