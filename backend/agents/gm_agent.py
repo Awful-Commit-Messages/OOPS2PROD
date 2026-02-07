@@ -189,11 +189,10 @@ Respond ONLY with valid JSON without any markdown or formatting:
                         "tension_delta": {
                             "type": "integer",
                             "description": "Change in tension level",
-                            "minimum": -2,
-                            "maximum": 2
                         }
                     },
-                    "required": ["what_happens", "affected_npcs", "context_for_npcs", "consequences", "tension_delta"]
+                    "required": ["what_happens", "affected_npcs", "context_for_npcs", "consequences", "tension_delta"],
+                    "additionalProperties": False
                 }
             )
             result = json.loads(response)
@@ -338,7 +337,8 @@ Respond only with valid JSON:
                             "description": "Specific state changes"
                         }
                     },
-                    "required": ["narrative", "tension_level", "scene_energy", "notable_changes"]
+                    "required": ["narrative", "tension_level", "scene_energy", "notable_changes"],
+                    "additionalProperties": False
                 }
             )
             result = json.loads(response)
@@ -473,11 +473,12 @@ Respond only with valid JSON:
                         },
                         "ending_type": {
                             "type": ["string", "null"],
-                            "enum": ["violence", "resolution", "departure", "stalemate", null],
+                            "enum": ["violence", "resolution", "departure", "stalemate", "null"],
                             "description": "Type of ending if approaching"
                         }
                     },
-                    "required": ["energy_assessment", "needs_stimulus", "stimulus_suggestion", "approaching_ending", "ending_type"]
+                    "required": ["energy_assessment", "needs_stimulus", "stimulus_suggestion", "approaching_ending", "ending_type"],
+                    "additionalProperties": False
                 }
             )
             result = json.loads(response)
@@ -556,7 +557,8 @@ Respond only with valid JSON:
                             "description": "One sentence description of what happened"
                         }
                     },
-                    "required": ["stimulus"]
+                    "required": ["stimulus"],
+                    "additionalProperties": False
                 }
             )
             result = json.loads(response)
@@ -595,11 +597,9 @@ Respond only with valid JSON:
                     "content": prompt
                 }
             ],
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "gm_response",
-                    "strict": True,
+            output_config={
+                "format": {
+                    "type": "json_schema",
                     "schema": response_schema
                 }
             }
