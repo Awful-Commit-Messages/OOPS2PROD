@@ -71,6 +71,23 @@ class GameState:
             "conclusion_description": self.conclusion_description,
         }
 
+    def to_public_dict(self):
+        """A sanitized view of the game state for the player UI (no NPC secrets/goals)."""
+        return {
+            "scenario_name": self.scenario_name,
+            "situation_description": self.situation_description,
+            "player_role": self.player_role,
+            "moment_count": self.moment_count,
+            "player_location": self.player_location,
+            "npcs": {k: v.to_public_dict() for k, v in self.npcs.items()},
+            "recent_events": [e.to_dict() for e in self.event_log[-5:]],
+            "scene_energy": self.scene_energy,
+            "tension_level": self.tension_level,
+            "scene_concluded": self.scene_concluded,
+            "conclusion_type": self.conclusion_type,
+            "conclusion_description": self.conclusion_description,
+        }
+
     def log_event(
         self,
         event_type: str,
