@@ -57,6 +57,6 @@ async def play(request: Request):
 
     print(result)
     
-    return { "message": result["narration"] }
+    return result
     
 app.include_router(api)
