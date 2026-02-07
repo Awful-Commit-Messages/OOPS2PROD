@@ -273,3 +273,33 @@ async def process_moment(self, player_input: Optional[str] = None) -> dict:
     tension_delta = gm_intepretation.get("tension_delta", 0)
     self.state.tension_level = max(1, min(10, self.state.tension_level + tension_delta))
     logger.info(f"Tension: {self.state.tension_level}/10 (Δ{tension_delta:+d})")
+
+    # =========================================================================
+    # PHASE 2: NPC AGENTS RESPOND (PARALLEL - REAL MULTI-AGENT!)
+    # =========================================================================
+
+    affected_npc_ids = gm_intepretation.get("affected_npcs", [])
+
+    if affected_npc_ids:
+        logger.info(f"Phase 2: Querying {len(affected_npc_ids)} NPCs in parallel...")
+
+        # Create async tasks for each affected NPC:
+        # This is TRUE parallel processing - all the NPCs respond simultaneously!
+        npc_response_tasks = [
+            self.npc_agents[npc_id].respond_to_moment(
+                gm_intepretation["context_for_npcs"], self.state
+            )
+            for npc_id in affected_npc_ids
+        ]
+
+        # Wait for all NPCs to respond:
+        npc_responses = await asyncio.gather(*npc_response_tasks)
+
+        # Log what the NPCs did:
+        for response in npc_responses:
+            logger.info(
+                f"  {response['npc_name']}: {response.get('dialogue') or response.get('action', 'observes')}"
+            )
+    else:
+        logger.info("Phase 2: No NPCs affected")
+        npc_responses = []
