@@ -540,3 +540,16 @@ class OrganicMultiAgentEngine:
         self.state.conclusion_description = "The situation reached a breaking point."
 
         logger.warning("SCENE FORCED-CONCLUDED (safety rail)")
+
+    def get_state(self) -> dict:
+        """
+        Gets the current game state.
+
+        Returns:
+            dict: Complete game state as a dictionary
+        """
+
+        if not self.state:
+            return {"error": "No active game."}
+
+        return self.state.to_dict()
