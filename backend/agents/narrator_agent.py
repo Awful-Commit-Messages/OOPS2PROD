@@ -1,7 +1,7 @@
 from anthropic import Anthropic
 import json
 import logging
-from typing import Dict, Optional
+from typing import List, Optional
 from models.narrator_state import NarratorState
 from models.game_state import GameState
 
@@ -48,7 +48,7 @@ YOUR ROLE:
 
 NARRATIVE GUIDELINES:
 - Write in second person ("You...")
-- Maatah your emotional state and style
+- Match your emotional state and style
 - Add sensory details that fit your personality
 - Let your obsessions leak through
 - When you don't know something, always fill in with your assumptions
@@ -96,10 +96,37 @@ Repond only with valid JSON:
 }}
 """
         try: 
-            response = await self._call_claude(prompt=prompt, response_schema = {
-
+            response = await self._call_claude(prompt=prompt, 
+                response_schema = {
+                    "type": "object",
+                    "properties": {
+                        "narration": {
+                            "type": "string",
+                            "description": ""
+                        },
+                        "what_you_noticed": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": ""
+                        },
+                        "what_you_missed": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": ""
+                        },
+                        "your_interpretation": {
+                            "type": "string",
+                            "description": ""
+                        },
+                        "reliability_check": {
+                            "type": "integer",
+                            "description": ""
+                        }
+                    },
+                    "required": ["narration", "what_you_noticed", "what_you_missed", "your_interpretation", "reliability_check"],
+                    "additionalProperties": False
             })
-            result - json.loads(response)
+            result = json.loads(response)
 
             # update narrator state
             self.narrator_state.knowledge.append(result['your_interpretation'])
@@ -147,11 +174,23 @@ Respond only with valid JSON:
         
         try:
             response = await self._call_claude(prompt=prompt, response_schema = {
-
+                "type": "object",
+                "properties": {
+                    "should_add_aside": {
+                        "type": "boolean",
+                        "description": ""
+                    },
+                    "aside_text": {
+                        "type": "string",
+                        "description": ""
+                    },
+                    "required": ["should_add_aside"],
+                    "additionalProperties": False
+                }
             })
             result = json.loads(response)
 
-            if result.get('should_add_aside')
+            if result.get('should_add_aside'):
                 return result.get('aside_text')
             return None
         
