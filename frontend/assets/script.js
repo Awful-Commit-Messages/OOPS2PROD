@@ -6,6 +6,14 @@ const exit_button = document.getElementById("exit_button")
 
 const start_button = document.getElementById("start_button")
 
+logger_button.addEventListener("click", function () {
+    const isHidden = logger_display.style.display === "none";
+
+    logger_display.style.display = isHidden ? "block" : "none";
+    logger_button.textContent = isHidden ? "Logger (on)" : "Logger (off)";
+});
+
+
 start_button.addEventListener("click", function () {
 
     // fade out button
@@ -16,7 +24,7 @@ start_button.addEventListener("click", function () {
         start_button.style.display = "none";
 
         // show main page (still invisible)
-        main_page.style.display = "block";
+        main_page.style.display = "flex";
 
         // next frame so opacity transition actually runs
         setTimeout(() => {
@@ -161,3 +169,32 @@ function startThinkingDots(textarea, startIndex) {
     };
 }
 
+let isDragging = false;
+let startY = 0;
+let startHeight = 0;
+
+logger_resize_handle.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    startY = e.clientY;
+    startHeight = logger_display.offsetHeight;
+
+    document.body.style.userSelect = "none";
+});
+
+document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+
+    const delta = startY - e.clientY;
+    const newHeight = startHeight + delta;
+
+    // clamp height
+    if (newHeight < 80) return;
+    if (newHeight > main_page.offsetHeight - 100) return;
+
+    logger_display.style.flex = `0 0 ${newHeight}px`;
+});
+
+document.addEventListener("mouseup", () => {
+    isDragging = false;
+    document.body.style.userSelect = "";
+});
