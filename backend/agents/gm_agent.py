@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Dict, List, Optional
 
-from models.game_state import GameState
+from backend.models.game_state import GameState
 
 # Logging of prompts, player actions, and state
 logger = logging.getLogger(__name__)
@@ -151,7 +151,7 @@ Interpret this moment objectively and realistically:
 
 Be specific and concrete. Avoid vague descriptions.and
 
-Respond ONLY with valid JSON:
+Respond ONLY with valid JSON without any markdown or formatting:
 {{
     "what_happens": "objective, specific description of the action",
     "affected_npcs": ["npc_id1", "npc_id2"],
@@ -189,11 +189,10 @@ Respond ONLY with valid JSON:
                         "tension_delta": {
                             "type": "integer",
                             "description": "Change in tension level",
-                            "minimum": -2,
-                            "maximum": 2
                         }
                     },
-                    "required": ["what_happens", "affected_npcs", "context_for_npcs", "consequences", "tension_delta"]
+                    "required": ["what_happens", "affected_npcs", "context_for_npcs", "consequences", "tension_delta"],
+                    "additionalProperties": False
                 }
             )
             result = json.loads(response)
@@ -233,7 +232,7 @@ Respond ONLY with valid JSON:
 
         The GM takes:
         - Their interpretation of what happened
-        - Hwo each NPC reacted
+        - How each NPC reacted
         - Current scene state
 
         And creates:
@@ -258,7 +257,7 @@ Respond ONLY with valid JSON:
         """
         # Format NPC responses for prompt
         npc_reactions = []
-        for reponse in npc_responses:
+        for response in npc_responses:
             reaction = f"{response['npc_name']}: "
             if response.get('dialogue'):
                 reaction += f'Says: "{response["dialogue"]}"'
@@ -275,7 +274,7 @@ Respond ONLY with valid JSON:
 
         prompt = f"""
 WHAT HAPPENED (your interpretation):
-{interpretation['what_happened']}
+{interpretation['what_happens']}
 
 NPC REACTIONS:
 {npc_reactions_text}
@@ -324,8 +323,6 @@ Respond only with valid JSON:
                         "tension_level": {
                             "type": "integer",
                             "description": "Current tension level",
-                            "minimum": 1,
-                            "maximum": 10
                         },
                         "scene_energy": {
                             "type": "string",
@@ -338,7 +335,8 @@ Respond only with valid JSON:
                             "description": "Specific state changes"
                         }
                     },
-                    "required": ["narrative", "tension_level", "scene_energy", "notable_changes"]
+                    "required": ["narrative", "tension_level", "scene_energy", "notable_changes"],
+                    "additionalProperties": False
                 }
             )
             result = json.loads(response)
@@ -472,12 +470,13 @@ Respond only with valid JSON:
                             "description": "Whether scene is nearing conclusion"
                         },
                         "ending_type": {
-                            "type": ["string", "null"],
-                            "enum": ["violence", "resolution", "departure", "stalemate", null],
+                            "type": "string",
+                            "enum": ["violence", "resolution", "departure", "stalemate", "null"],
                             "description": "Type of ending if approaching"
                         }
                     },
-                    "required": ["energy_assessment", "needs_stimulus", "stimulus_suggestion", "approaching_ending", "ending_type"]
+                    "required": ["energy_assessment", "needs_stimulus", "stimulus_suggestion", "approaching_ending", "ending_type"],
+                    "additionalProperties": False
                 }
             )
             result = json.loads(response)
@@ -556,7 +555,8 @@ Respond only with valid JSON:
                             "description": "One sentence description of what happened"
                         }
                     },
-                    "required": ["stimulus"]
+                    "required": ["stimulus"],
+                    "additionalProperties": False
                 }
             )
             result = json.loads(response)
@@ -595,11 +595,9 @@ Respond only with valid JSON:
                     "content": prompt
                 }
             ],
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "gm_response",
-                    "strict": True,
+            output_config={
+                "format": {
+                    "type": "json_schema",
                     "schema": response_schema
                 }
             }

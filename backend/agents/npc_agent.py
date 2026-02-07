@@ -398,13 +398,9 @@ Respond only with valid JSON:
                     "content": prompt
                 }
             ],
-            response_format={
+            output_config={
                 "type": "json_schema",
-                "json_schema": {
-                    "name": "npc_response",
-                    "strict": True,
-                    "schema": response_schema
-                }
+                "json_schema": response_schema
             }
         )
 
