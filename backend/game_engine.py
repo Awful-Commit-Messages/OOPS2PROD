@@ -164,3 +164,29 @@ class OrganicMultiAgentEngine:
             obsessions=NARRATOR["obsessions"],
             reliability=NARRATOR["starting_reliability"],
         )
+
+    def _initialize_agents(self, narrator_state: NarratorState):
+        """
+        Creates all the different agent instances.
+
+        Args:
+            narrator_state: Narrator state configuration
+        """
+
+        # GM and Narrator share first API key (both need Sonnet):
+        self.gm_agent = GMAgent(self.api_keys[0])
+        self.narrator_agent = NarratorAgent(self.api_keys[0], narrator_state)
+
+        # NPCs use the remaining API keys in round-robin.
+        # This distributes the load across multiple API keys.
+        self.npc_agents = {}
+        for i, (npc_id, npc_state) in enumerate(self.state.npcs.items()):
+            # Round-robin through available keys (skip first, it's for GM/Narrator):
+            key_index = 1 + (i % max(1, len(self.api_keys) - 1))  # Math, ugh.
+            if key_index >= len(self.api_keys):
+                key_index = 0  # Rotate back to zero
+
+            api_key = self.api_keys[key_index]
+            self.npc_agents[npc_id] = NPCAgent(api_key, npc_state)
+
+            logger.info(f"Created NPC agent: {npc_state.name} (key {key_index})")
