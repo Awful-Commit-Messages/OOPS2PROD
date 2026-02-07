@@ -184,7 +184,37 @@ Respond only with valid JSON:
 """
         try:
             logger.info(f"{self.npc_state.name} processing response")
-            response = await self._call_claude(prompt)
+            response = await self._call_claude(prompt=prompt,
+                response_schema={
+                    "type": "object",
+                    "properties": {
+                        "dialogue": {
+                            "type": ["string", "null"],
+                            "description": "What you say, or null if silent"
+                        },
+                        "action": {
+                            "type": ["string", "null"],
+                            "description": "What you do physically, or null"
+                        },
+                        "internal_thought": {
+                            "type": "string",
+                            "description": "Your private reasoning"
+                        },
+                        "emotional_state": {
+                            "type": "string",
+                            "description": "Your current emotion"
+                        },
+                        "urgency_change": {
+                            "type": "integer",
+                            "minimum": -2,
+                            "maximum": 2
+                        },
+                        "wants_to_act_next": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": ["dialogue", "action", "internal_thought", "emotional_state", "urgency_change", "wants_to_act_next"]
+                })
             result = json.loads(response)
 
             # add NPC identification
@@ -310,7 +340,23 @@ Respond only with valid JSON:
 """
         try:
             logger.info(f"Checking if {self.npc_state.name} wants initiative")
-            response = await self._call_claude(prompt)
+            response = await self._call_claude(prompt=prompt, 
+                response_schema={
+                    "type": "object",
+                    "properties": {
+                        "should_act": {
+                            "type": "boolean"
+                        },
+                        "action": {
+                            "type": ["string", "null"],
+                            "description": "What you do physically, or null"
+                        },
+                        "reasoning": {
+                            "type": "string",
+                            "description": "Your private reasoning"
+                        }
+                    }
+                })
             result = json.load(response)
 
             if result.get('should_act'):
@@ -330,7 +376,7 @@ Respond only with valid JSON:
             logger.error(f"{self.npc_state.name} initiative check failed: {e}")
             return None
         
-    async def _call_claude(self, prompt: str) -> str:
+    async def _call_claude(self, prompt: str, response_schema: dict) -> str:
         """
         Call Claude API with NPC's system prompt
 
@@ -351,7 +397,15 @@ Respond only with valid JSON:
                     "role": "user",
                     "content": prompt
                 }
-            ]
+            ],
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "npc_response",
+                    "strict": True,
+                    "schema": response_schema
+                }
+            }
         )
 
         return response.content[0].text
