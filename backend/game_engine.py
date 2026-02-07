@@ -256,7 +256,7 @@ async def process_moment(self, player_input: Optional[str] = None) -> dict:
     # =========================================================================
 
     logger.info("Phase 1: GM is interpreting the moment...")
-    gm_intepretation = await self.gm_agent.interpret_mement(
+    gm_interpretation = await self.gm_agent.interpret_mement(
         player_input, initiator, self.state
     )
 
@@ -264,13 +264,13 @@ async def process_moment(self, player_input: Optional[str] = None) -> dict:
     self.state.log_event(
         event_type="player_action" if player_input else "npc_action",
         actor=initiator,
-        description=gm_intepretation["what_happens"],
+        description=gm_interpretation["what_happens"],
         location=self.state.player_location,
-        participants=["player"] + gm_intepretation.get("affected_npcs", []),
+        participants=["player"] + gm_interpretation.get("affected_npcs", []),
     )
 
     # Update tension from the GM's interpretation:
-    tension_delta = gm_intepretation.get("tension_delta", 0)
+    tension_delta = gm_interpretation.get("tension_delta", 0)
     self.state.tension_level = max(1, min(10, self.state.tension_level + tension_delta))
     logger.info(f"Tension: {self.state.tension_level}/10 (Δ{tension_delta:+d})")
 
@@ -278,7 +278,7 @@ async def process_moment(self, player_input: Optional[str] = None) -> dict:
     # PHASE 2: NPC AGENTS RESPOND (PARALLEL - REAL MULTI-AGENT!)
     # =========================================================================
 
-    affected_npc_ids = gm_intepretation.get("affected_npcs", [])
+    affected_npc_ids = gm_interpretation.get("affected_npcs", [])
 
     if affected_npc_ids:
         logger.info(f"Phase 2: Querying {len(affected_npc_ids)} NPCs in parallel...")
@@ -287,7 +287,7 @@ async def process_moment(self, player_input: Optional[str] = None) -> dict:
         # This is TRUE parallel processing - all the NPCs respond simultaneously!
         npc_response_tasks = [
             self.npc_agents[npc_id].respond_to_moment(
-                gm_intepretation["context_for_npcs"], self.state
+                gm_interpretation["context_for_npcs"], self.state
             )
             for npc_id in affected_npc_ids
         ]
@@ -303,3 +303,19 @@ async def process_moment(self, player_input: Optional[str] = None) -> dict:
     else:
         logger.info("Phase 2: No NPCs affected")
         npc_responses = []
+
+    # =========================================================================
+    # PHASE 3: GM NARRATIVE SYNTHESIS (OBJECTIVE NARRATIVE)
+    # =========================================================================
+
+    logger.info("Phase 3: GM is synthesizing the narrative...")
+    gm_narrative = await self.gm_agent.synthesize_narrative(
+        gm_interpretation, npc_responses, self.state
+    )
+
+    # Update state from GM's synthesis:
+    self.state.tension_level = gm_narrative.get(
+        "tension_level", self.state.tension_level
+    )
+    self.state.scene_energy = gm_narrative.get("scene_energy", self.state.scene_energy)
+    logger.info(f"Scene energy: {self.state.scene_energy}")
