@@ -1,6 +1,7 @@
 from fastapi import FastAPI, APIRouter, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+import time
 
 # start FastAPI server
 app = FastAPI()
@@ -12,7 +13,7 @@ app = FastAPI()
 # =======================================================
 
 # mount frontend assets
-app.mount("/assets", StaticFiles(directory="frontend/assets"), name="assets")
+app.mount("/assets", StaticFiles(directory="./frontend/assets"), name="assets")
 
 # root route return frontend html with assets
 @app.get("/")
@@ -30,16 +31,20 @@ api = APIRouter(prefix="/api")
 # API status 
 @api.get("/status")
 def status():
-    return { "status": "THE SERVER IS ON, OK???" }
+    return { "status": "THE SERVER IS ON, OK??s" }
 
 @api.post("/play")
 async def play(request: Request):
     payload = await request.json()
-    event = payload.get("event")
-    
-    backend_ret = event
-    #TODO: backend_ret = backend_function(event)
-    
-    return backend_ret
+
+    event = payload.get("event", {})
+    message = event.get("message")
+
+    print(event)
+
+    time.sleep(5)
+    return {
+        "message": "bot says: test successful! \0"
+    }
     
 app.include_router(api)

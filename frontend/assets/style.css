@@ -1,0 +1,187 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: black;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+/* Fullscreen canvas background */
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+}
+
+/* Flex container overlay */
+.flex-foundation {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    background-color: rgba(0, 0, 0, 0.0);
+
+}
+
+#logger_display {
+    display: none;
+    left: 0;
+
+    width: 100%;
+    height: 500px;
+
+    flex: 0 0 300px;
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+    background-color: rgb(24, 24, 24);
+
+}
+
+#logger_resize_handle {
+    height: 8px;
+    cursor: ns-resize;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+#logger_resize_handle:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+/* Center box */
+#main_page {
+    position: relative;
+    display: none;
+    flex-direction: column;
+    opacity: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    width: 95%;
+    height: 90%;
+    border-radius: 30px;
+    color: #0F0;
+
+    font-family: 'Orbitron', monospace;
+    font-weight: bold;
+    font-size: 2em;
+    letter-spacing: 2px;
+
+    border: 1px solid rgb(89, 89, 89);
+
+    text-shadow:
+        0 0 4px rgba(0, 255, 65, 0.8),
+        0 0 4px rgba(0, 255, 65, 0.5);
+
+    transition:
+        opacity 0.8s ease,
+        width 1.45s cubic-bezier(0.22, 1, 0.36, 1),
+        height 1.45s cubic-bezier(0.22, 1, 0.36, 1),
+        top 2.95s cubic-bezier(0.22, 1, 0.36, 1),
+        color 1.3s ease,
+        border-color 1.3s ease,
+        box-shadow 1.3s ease;
+}
+
+#start_button {
+    font-family: 'Orbitron', monospace;
+    font-weight: bold;
+    font-size: 2em;
+    letter-spacing: 2px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    height: 82px;
+    width: 200px;
+
+    background-color: black;
+    border-radius: 67px;
+
+    color: #0F0;
+    border: 1px solid rgb(89, 89, 89);
+
+    text-shadow:
+        0 0 6px rgba(0, 255, 65, 0.8),
+        0 0 7px rgba(0, 255, 65, 0.5);
+
+    cursor: pointer;
+
+    /* ANIMATABLE */
+    opacity: 1;
+    transition: opacity 0.9s ease;
+}
+
+/* Hidden state */
+#start_button.hidden {
+    opacity: 0;
+    pointer-events: none;
+    /* optional */
+}
+
+#window_header {
+    position: relative;
+    top: 0;
+    width: 100%;
+    height: 30px;
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
+    background-color: grey;
+    padding-top: 12px;
+    flex: 0 0 30px;
+
+}
+
+#logger_button {
+    user-select: none;
+    float: left;
+    font-size: 18px;
+    margin-left: 28px;
+    cursor: pointer;
+
+    color: rgb(0, 255, 38);
+}
+
+#exit_button {
+    user-select: none;
+    float: right;
+    font-size: 18px;
+    margin-right: 28px;
+    cursor: pointer;
+
+    color: rgb(238, 16, 0);
+    text-shadow:
+        0 0 4px rgba(155, 10, 0, 0.8),
+        0 0 4px rgba(155, 10, 0, 0.5);
+}
+
+#text_interface {
+    flex: 1;
+
+    width: 98%;
+    height: 90%;
+    margin: auto;
+    padding-top: 10px;
+}
+
+#interface_area {
+
+    color: rgb(0, 255, 38);
+    background-color: rgba(0, 0, 0, 0.0);
+    height: 99%;
+    width: 99%;
+    resize: none;
+    border-style: none;
+    border-color: Transparent;
+    overflow: auto;
+}
+
+#interface_area:focus {
+    outline: none;
+    box-shadow: none;
+    border-color: inherit;
+}
