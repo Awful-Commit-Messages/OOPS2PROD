@@ -171,3 +171,35 @@ Respond only with valid JSON:
                 filtered['narrator_might_miss'] = blind_spot
 
         return filtered
+    
+    def _fallback_narration(self, gm_facts: dict) -> dict:
+        """Fallback if API fails"""
+        return {
+            "narration": gm_facts.get('what_happens', 'Something happens...'),
+            "what_you_noticed": [],
+            "what_you_missed": [],
+            "your_interpretation": "Unclear",
+            "reliability_check": 5
+        }
+    
+    async def _call_claude(self, prompt: str, response_schema: dict) -> str:
+        """Call Claude with narrator's system prompt"""
+        system_prompt = self.get_system_prompt()
+
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=1500,
+            system=system_prompt,
+            messages=[
+                {
+                    "role": "user", 
+                    "content": prompt
+                    }
+            ],
+            output_config={
+                "format": {
+                    "type": "json_schema",
+                    "schema": response_schema
+                }
+            }
+        )
