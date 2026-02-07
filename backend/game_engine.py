@@ -502,3 +502,28 @@ class OrganicMultiAgentEngine:
                     immediate.append(initiative)
 
         return immediate
+
+    async def _conclude_scene(self, ending_type: Optional[str]):
+        """
+        Mark the scene as naturally concluded.
+
+        Args:
+            ending_type: How it ended (violence, resolution, departure, etc.)
+        """
+
+        self.state.scene_concluded = True
+        self.state.conclusion_type = ending_type or "resolution"
+
+        conclusion_messages = {
+            # FIXME!  This should probably be defined elsewhere based on the given scenario!
+            "violence": "The situation escalated into violence.",
+            "resolution": "The scene reached a natural resolution.",
+            "departure": "Someone left, changing everything.",
+            "stalemate": "An uneasy stalemate settled over the scene.",
+        }
+
+        self.state.conclusion_description = conclusion_messages.get(
+            ending_type, "The scene concluded naturally"
+        )
+
+        logger.info(f"SCENE CONCLUDED: {self.state.conclusion_type}")
