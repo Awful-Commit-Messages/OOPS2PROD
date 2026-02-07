@@ -7,7 +7,7 @@ from models.game_state import GameState
 
 logger = logging.getLogger(__name__)
 
-class NPCAgent:
+class NarratorAgent:
     """Unrealiable narrator - filters GM's objective reality through a subjective lens"""
     def __init__(self, narrator_state: NarratorState):
         self.client = Anthropic()
@@ -60,7 +60,7 @@ You are not a neutral observer. You are an unreliable narrator with an agenda an
     async def narrate_moment(self, gm_objective_facts: dict, npc_responses: List[dict], game_state: GameState) -> dict:
         """Take objective GM synthesis and filter it through the narrator's lens"""
         # build what the narrator actually perceives
-        perceived_facts = self._filt_by_perception(gm_objective_facts)
+        perceived_facts = self._filter_by_perception(gm_objective_facts)
 
         prompt = f"""
 THE OBJECTIVE FACTS (what actually happened):
@@ -242,3 +242,5 @@ Respond only with valid JSON:
                 }
             }
         )
+
+        return response.content[0].text
