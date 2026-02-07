@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Dict, List, Optional
 
-from models.game_state import GameState
+from backend.models.game_state import GameState
 
 # Logging of prompts, player actions, and state
 logger = logging.getLogger(__name__)
@@ -151,7 +151,7 @@ Interpret this moment objectively and realistically:
 
 Be specific and concrete. Avoid vague descriptions.and
 
-Respond ONLY with valid JSON:
+Respond ONLY with valid JSON without any markdown or formatting:
 {{
     "what_happens": "objective, specific description of the action",
     "affected_npcs": ["npc_id1", "npc_id2"],

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 from datetime import datetime
-from models.npc_state import NPCState
+from backend.models.npc_state import NPCState
 
 @dataclass
 class Event:
@@ -34,7 +34,7 @@ class GameState:
     # dynamic state
     moment_count: int = 0
     player_location: str = "main_scene"
-    npcs: Dict[str, NPCState] = field(default_factory=dict)
+    npcs: Dict[str, NPCState] = field(default_factory=dict) # npc_id, NPCState
     event_log: List[Event] = field(default_factory=list)
 
     # scene tracking
