@@ -13,35 +13,51 @@ logger_button.addEventListener("click", function () {
     logger_button.textContent = isHidden ? "Logger (on)" : "Logger (off)";
 });
 
-start_button.addEventListener("click", function () {
+start_button.addEventListener("click", async function () {
 
-    fetch("/api/start", {
+    // lock input immediately
+    inputEnabled = false;
+
+    const res = await fetch("/api/start", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            event: {
-                message: "Hi I'd like to start a game please :)"
-            }
-        })
+        headers: { "Content-Type": "application/json" }
     });
+
+    const data = await res.json();
 
     // fade out button
     start_button.style.opacity = "0";
 
-    setTimeout(() => {
-        // AFTER fade out finishes
+    setTimeout(async () => {
         start_button.style.display = "none";
-
-        // show main page (still invisible)
         main_page.style.display = "flex";
 
-        // next frame so opacity transition actually runs
         setTimeout(() => {
             main_page.style.opacity = "1";
         }, 10);
 
-    }, 1000); // matches fade-out duration
+        // clear terminal and type intro
+        textarea.value = "";
+        textarea.value += "Narrator:\n";
 
+        await ghostTypeTextarea(textarea, data.narrator_intro);
+
+        if (data.suggested_actions?.length) {
+            textarea.value += "\n— You could try —\n";
+
+            for (const action of data.suggested_actions) {
+                textarea.value += "• " + action + "\n";
+            }
+
+            textarea.value += "\n";
+        }
+
+        textarea.value += "oops@2prod:~$\0 ";
+        inputEnabled = true;
+
+        textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+
+    }, 1000);
 });
 
 exit_button.addEventListener("click", function () {
