@@ -24,7 +24,7 @@ class OrganicMultiAgentEngine:
 
     Responsibilities:
     1. Initialize all the agents (GM, NPCs, Narrator)
-    2. Coordinate thhe multi-agent game loop
+    2. Coordinate the multi-agent game loop
     3. Manage the game state
     4. Handle parallel NPC processing
     5. Monitor scene health
@@ -92,7 +92,7 @@ class OrganicMultiAgentEngine:
         # Step 4: Get the narrator's introduction:
         narrator_intro = self._get_narrator_intro()
 
-        # Step 5: Get othe opening scene:
+        # Step 5: Get other opening scene:
         opening_scene = (
             self.state.event_log[0].description if self.state.event_log else ""
         )
@@ -207,7 +207,7 @@ class OrganicMultiAgentEngine:
 
     async def process_moment(self, player_input: Optional[str] = None) -> dict:
         """
-        Prcesses one moment in the story.
+        Processes one moment in the story.
 
         This is THE core function, where the multi-agent orchestration occurs.
 
@@ -237,7 +237,7 @@ class OrganicMultiAgentEngine:
         logger.info(f"MOMENT {self.state.moment_count}")
         logger.info("=" * 60)
 
-        # Determine who initated this moment:
+        # Determine who initiated this moment:
         if player_input:
             initiator = "player"
             logger.info(f"Player: {player_input}")
@@ -253,7 +253,7 @@ class OrganicMultiAgentEngine:
         # =========================================================================
 
         logger.info("Phase 1: GM is interpreting the moment...")
-        gm_interpretation = await self.gm_agent.interpret_mement(
+        gm_interpretation = await self.gm_agent.interpret_moment(
             player_input, initiator, self.state
         )
 
