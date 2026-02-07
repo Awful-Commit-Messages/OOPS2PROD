@@ -37,7 +37,7 @@ class OrganicMultiAgentEngine:
     # GAME INITIALIZATION
     # =========================================================================
 
-    def start_game(self) -> dict:
+    async def start_game(self) -> dict:
         logger.info("=" * 60)
         logger.info("STARTING NEW GAME")
         logger.info("=" * 60)
@@ -46,17 +46,61 @@ class OrganicMultiAgentEngine:
         narrator_state = self._create_narrator_from_config()
         self._initialize_agents(narrator_state)
 
-        narrator_intro = self._get_narrator_intro()
-        opening_scene = (
-            self.state.event_log[0].description if self.state.event_log else ""
+        opening = await self.gm_agent.generate_opening_scene(self.state)
+        self.state.tension_level = opening.get(
+            "initial_tension_level", self.state.tension_level
+        )
+        self.state.scene_energy = opening.get(
+            "initial_scene_energy", self.state.scene_energy
+        )
+
+        npc_briefings = opening.get("npc_briefings") or []
+
+        # Backwards compatibility: allow either dict (old) or list (new)
+        if isinstance(npc_briefings, dict):
+            iterable = [{"npc_id": k, "briefing": v} for k, v in npc_briefings.items()]
+        else:
+            iterable = npc_briefings
+
+        for item in iterable:
+            npc_id = item.get("npc_id")
+            briefing = item.get("briefing")
+            if npc_id in self.state.npcs and briefing:
+                self.state.npcs[npc_id].knowledge.append(f"[Scene start] {briefing}")
+
+        self.state.log_event(
+            event_type="gm_stimulus",
+            actor="environment",
+            description="The interrogation begins.  Everyone waits for the detective to speak.",
+            location=self.state.player_location,
+            participants=["player"] + list(self.state.npcs.keys()),
+        )
+
+        narrator_output = await self.narrator_agent.narrate_moment(
+            {
+                "what_happens": opening.get("player_intro", ""),
+                "tension": self.state.tension_level,
+                "energy": self.state.scene_energy,
+            },
+            [],
+            self.state,
         )
 
         return {
             "scenario_name": self.state.scenario_name,
             "narrator_name": narrator_state.name,
-            "narrator_intro": narrator_intro,
-            "opening_scene": opening_scene,
-            "state": self.state.to_dict(),
+            "player_role": self.state.player_role,
+            "narrator_intro": narrator_output.get("narration", ""),
+            "opening_scene": opening.get("player_intro", ""),
+            "player_instructions": opening.get("player_instructions", ""),
+            "suggested_actions": opening.get("suggested_actions", []),
+            "state": self.state.to_public_dict()
+            if hasattr(self.state, "to_public_dict")
+            else self.state.to_dict(),
+            "debug": {
+                "gm_private_notes": opening.get("gm_private_notes", ""),
+                "narrator_briefing": opening.get("narrator_briefing", ""),
+            },
         }
 
     def _create_game_state_from_config(self) -> GameState:
