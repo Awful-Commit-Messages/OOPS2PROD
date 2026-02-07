@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 from datetime import datetime
-from backend.models.npc_state import NPCState
+from models.npc_state import NPCState
 
 @dataclass
 class Event:
