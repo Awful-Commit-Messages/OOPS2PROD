@@ -343,3 +343,16 @@ async def process_moment(self, player_input: Optional[str] = None) -> dict:
     narrator_aside = await self.narrator_agent.narrator_aside(self.state)
     if narrator_aside:
         logger.info(f"Narrator aside: {narrator_aside[:50]}...")
+
+    # =========================================================================
+    # PHASE 5: CHECK SCENE STATUS
+    # =========================================================================
+
+    logger.info("Phase 5: Checking scene status...")
+    scene_status = await self.gm_agent.check_scene_status(self.state)
+    logger.info(f"Energy assessment: {scene_status.get('energy_assessment')}")
+
+    # Check for natural ending:
+    if scene_status.get("approaching_ending"):
+        logger.info(f"Scene ending detected: {scene_status.get('ending_type')}")
+        self._conclude_scene(scene_status.get("ending_type"))
