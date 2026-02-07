@@ -1,0 +1,15 @@
+# docker-compose.yml
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: oops2prod
+    ports:
+      - "8000:8000"
+    environment:
+      - API_KEY=${ANTHROPIC_API_KEY}
+    restart: unless-stopped
