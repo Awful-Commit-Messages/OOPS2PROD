@@ -25,12 +25,13 @@ canvas {
     align-items: center;
     justify-content: center;
     z-index: 1;
+    background-color: rgba(0, 0, 0, 0.0);
 }
 
 /* Center box */
 #main_page {
-    background-color: black;
 
+    background-color: rgba(0, 0, 0, 0.8);
     width: 95%;
     height: 90%;
     border-radius: 30px;
@@ -55,7 +56,8 @@ canvas {
         border-color 1.3s ease,
         box-shadow 1.3s ease;
 }
-#window_header{
+
+#window_header {
     position: relative;
     top: 0;
     width: 100%;
@@ -67,25 +69,51 @@ canvas {
 
 }
 
-#logger_button{
+#logger_button {
+    user-select: none;
     float: left;
     font-size: 18px;
     margin-left: 28px;
     cursor: pointer;
-    width: 15s0px;
+
     color: rgb(0, 255, 38);
 }
 
-#exit_button{
+#exit_button {
+    user-select: none;
     float: right;
     font-size: 18px;
     margin-right: 28px;
     cursor: pointer;
-    width: 15s0px;
-    color: rgb(155, 10, 0);
+
+    color: rgb(238, 16, 0);
     text-shadow:
         0 0 4px rgba(155, 10, 0, 0.8),
         0 0 4px rgba(155, 10, 0, 0.5);
 }
 
+#text_interface {
+    width: 98%;
+    height: 90%;
+    margin: auto;
+    padding-top: 10px;
+}
 
+#interface_area {
+
+    color: rgb(0, 255, 38);
+    background-color: rgba(0, 0, 0, 0.0);
+    height: 99%;
+    width: 99%;
+    resize: none;
+    border-style: none;
+    border-color: Transparent;
+    overflow: auto;
+    padding: 0;
+}
+
+#interface_area:focus {
+    outline: none;
+    box-shadow: none;
+    border-color: inherit;
+}

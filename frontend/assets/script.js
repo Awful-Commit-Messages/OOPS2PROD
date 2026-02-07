@@ -8,3 +8,9 @@ logger_button.addEventListener("click", function () {
     ? "Logger (on)"
     : "Logger (off)";
 });
+
+const textarea = document.getElementById("interface_area");
+
+// Place cursor at character index 0 (top-left)
+textarea.focus();
+textarea.setSelectionRange(0, 0);
