@@ -47,7 +47,9 @@ class OrganicMultiAgentEngine:
         self._initialize_agents(narrator_state)
 
         narrator_intro = self._get_narrator_intro()
-        opening_scene = self.state.event_log[0].description if self.state.event_log else ""
+        opening_scene = (
+            self.state.event_log[0].description if self.state.event_log else ""
+        )
 
         return {
             "scenario_name": self.state.scenario_name,
@@ -139,26 +141,36 @@ class OrganicMultiAgentEngine:
 
         self.state.tension_level = max(
             1,
-            min(10, self.state.tension_level + gm_interpretation.get("tension_delta", 0))
+            min(
+                10, self.state.tension_level + gm_interpretation.get("tension_delta", 0)
+            ),
         )
 
         affected_npcs = gm_interpretation.get("affected_npcs", [])
-        npc_responses = await asyncio.gather(
-            *[
-                self.npc_agents[npc_id].respond_to_moment(
-                    gm_interpretation["context_for_npcs"], self.state
-                )
-                for npc_id in affected_npcs
-                if npc_id in self.npc_agents
-            ]
-        ) if affected_npcs else []
+        npc_responses = (
+            await asyncio.gather(
+                *[
+                    self.npc_agents[npc_id].respond_to_moment(
+                        gm_interpretation["context_for_npcs"], self.state
+                    )
+                    for npc_id in affected_npcs
+                    if npc_id in self.npc_agents
+                ]
+            )
+            if affected_npcs
+            else []
+        )
 
         gm_narrative = await self.gm_agent.synthesize_narrative(
             gm_interpretation, npc_responses, self.state
         )
 
-        self.state.tension_level = gm_narrative.get("tension_level", self.state.tension_level)
-        self.state.scene_energy = gm_narrative.get("scene_energy", self.state.scene_energy)
+        self.state.tension_level = gm_narrative.get(
+            "tension_level", self.state.tension_level
+        )
+        self.state.scene_energy = gm_narrative.get(
+            "scene_energy", self.state.scene_energy
+        )
 
         narrator_output = await self.narrator_agent.narrate_moment(
             {
@@ -178,7 +190,9 @@ class OrganicMultiAgentEngine:
             self._conclude_scene(scene_status.get("ending_type"))
 
         external_event = None
-        if scene_status.get("energy_assessment") == "stalled" and scene_status.get("needs_stimulus"):
+        if scene_status.get("energy_assessment") == "stalled" and scene_status.get(
+            "needs_stimulus"
+        ):
             external_event = await self.gm_agent.generate_stimulus(self.state)
             self.state.log_event(
                 event_type="external",
@@ -187,7 +201,10 @@ class OrganicMultiAgentEngine:
                 location=self.state.player_location,
             )
 
-        if self.state.moment_count >= self.state.max_moments and not self.state.scene_concluded:
+        if (
+            self.state.moment_count >= self.state.max_moments
+            and not self.state.scene_concluded
+        ):
             self._force_conclusion()
 
         return {
@@ -202,7 +219,9 @@ class OrganicMultiAgentEngine:
                 "gm_objective_truth": gm_narrative["narrative"],
                 "narrator_noticed": narrator_output.get("what_you_noticed", []),
                 "narrator_missed": narrator_output.get("what_you_missed", []),
-                "narrator_interpretation": narrator_output.get("your_interpretation", ""),
+                "narrator_interpretation": narrator_output.get(
+                    "your_interpretation", ""
+                ),
             },
         }
 
@@ -212,8 +231,7 @@ class OrganicMultiAgentEngine:
 
     async def _find_urgent_npc(self) -> Optional[str]:
         urgent = [
-            npc_id for npc_id, npc in self.state.npcs.items()
-            if npc.urgency_level >= 7
+            npc_id for npc_id, npc in self.state.npcs.items() if npc.urgency_level >= 7
         ]
 
         if not urgent:
