@@ -101,30 +101,23 @@ class GMAgent:
         Always respond in valid JSON format
         """
 
-    async def generate_opening_scene(self, game_state: GameState) -> str:
-        """
-        Create an opening scene for the player *and* seed private context for NPCs and the narrator.
 
-        This is called once at game start so the UI can display a meaningful introduction instead of
-        showing an empty prompt.
-
-        FIXME!  This needs more.
-        """
-
-        npc_summary = {
-            npc_id: {
-                "name": npc.name,
-                "personality": npc.personality,
-                "emotional_state": npc.emotional_state,
-                "urgency_level": npc.urgency_level,
-                "goal": npc.current_goal,
-                "secrets": npc.secrets,
-                "knowledge_tail": npc.knowledge[-3:],
-            }
-            for npc_id, npc in game_state.npcs.items()
+async def generate_opening_scene(self, game_state: GameState) -> dict:
+    npc_summary = {
+        npc_id: {
+            "name": npc.name,
+            "personality": npc.personality,
+            "emotional_state": npc.emotional_state,
+            "urgency_level": npc.urgency_level,
+            "goal": npc.current_goal,
+            "secrets": npc.secrets,
+            "knowledge_tail": npc.knowledge[-3:],
         }
+        for npc_id, npc in game_state.npcs.items()
+    }
+    npc_ids = list(game_state.npcs.keys())
 
-        prompt = f"""
+    prompt = f"""
 You are opening a new scene for an interactive roleplaying experience.
 
 SCENARIO:
@@ -133,101 +126,64 @@ SCENARIO:
 - Situation: {game_state.situation_description}
 - Location: {game_state.player_location}
 
-NPC ROSTER (you are omniscient; use secrets/true goals for internal consistency):
+NPC ROSTER (omniscient; use secrets/true goals for internal consistency):
 {json.dumps(npc_summary, indent=2)}
 
-Your job:
-1) Write a **player-facing opening** that sets the scene clearly, establishes stakes, and ends with an
-   obvious invitation to act (do NOT directly real NPC secrets; convey them only through behavior/cues).
-2) Provide **clear gameplay instructions** (How the player should type actions/dialogue).
-3) Provide **NPC briefings**: for each npc_id, a short "what you perceive" + "what you intend next" note
-   written from that NPC's perspective.  (They can know their own secrets, but do NOT include other NPC secrets.)
-4) Provide a short **narrator briefing**: tone, atmosphere, and what details to emphasize for this opening.
-
 Output ONLY valid JSON with the following keys:
-- player_intro: string (6-10 sentences, concrete details, ends with a prompts to act)
-- player_instructions: string (2-5 bullet-like lines in plain text; examples are welcome)
-- suggested_actions: array of 6-10 short example inputs the player might type
-- npc_briefings: object mapping npc_id -> string (2-4 sentences each)
-- narrator_briefing: string (3-6 sentences)
+- player_intro: string
+- player_instructions: string
+- suggested_actions: array of strings
+- npc_briefings: array of objects: {{ "npc_id": string, "briefing": string }}
+- narrator_briefing: string
 - initial_tension_level: integer (1-10)
 - initial_scene_energy: one of "building", "plateau", "climactic", "resolving"
-- gm_private_notes: string (2-6 sentences: the true situation/drivers you will track; may reference secrets)
+- gm_private_notes: string
 """
 
-        try:
-            response = await self._call_claude(
-                prompt=prompt,
-                game_state=game_state,
-                response_schema={
-                    "type": "object",
-                    "properties": {
-                        "player_intro": {"type": "string"},
-                        "player_instructions": {"type": "string"},
-                        "suggested_actions": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
-                        "npc_briefings": {
-                            "type": "object",
-                            "additionalProperties": {"type": "string"},
-                        },
-                        "narrator_briefing": {"type": "string"},
-                        "initial_tension": {"type": "integer"},
-                        "initial_scene_energy": {
-                            "type": "string",
-                            "enum": ["building", "plateau", "climactic", "resolving"],
-                        },
-                        "gm_private_notes": {"type": "string"},
-                    },
-                    "required": [
-                        "player_intro",
-                        "player_instructions",
-                        "suggested_actions",
-                        "npc_briefings",
-                        "narrator_briefing",
-                        "initial_tension_level",
-                        "initial_scene_energy",
-                        "gm_private_notes",
-                    ],
-                    "additionalProperties": False,
-                },
-            )
-            return json.loads(response)
-        except Exception as e:
-            logger.error(f"Opening scene generation failed: {e}")
-            npc_names = (
-                ", ".join([n.name for n in game_state.npcs.values()]) or "no one"
-            )
-            return {
-                "player_intro": (
-                    f"You step into {game_state.scenario_name}. The air is tight with suspicion. "
-                    f"In the room with you: {npc_names}. Everyone is waiting for you to speak. "
-                    "What do you do?"
-                ),
-                "player_instructions": (
-                    "Type what your character says or does. Examples:\n"
-                    '- Ask a direct question ("Where were you last night?")\n'
-                    '- Observe behavior ("I watch Maria\'s face for a reaction")\n'
-                    '- Apply pressure ("I raise my voice and demand an answer")'
-                ),
-                "suggested_actions": [
-                    "Ask Frank where he was last night",
-                    "Ask Maria what she heard",
-                    "Observe both suspects in silence",
-                    "Present a piece of evidence",
-                    "Threaten to bring in backup",
-                    "Offer someone a deal for cooperation",
-                ],
+    response = await self._call_claude(
+        prompt=prompt,
+        game_state=game_state,
+        response_schema={
+            "type": "object",
+            "properties": {
+                "player_intro": {"type": "string"},
+                "player_instructions": {"type": "string"},
+                "suggested_actions": {"type": "array", "items": {"type": "string"}},
                 "npc_briefings": {
-                    npc_id: "You are here. Stay guarded."
-                    for npc_id in game_state.npcs.keys()
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "npc_id": {"type": "string", "enum": npc_ids},
+                            "briefing": {"type": "string"},
+                        },
+                        "required": ["npc_id", "briefing"],
+                        "additionalProperties": False,
+                    },
                 },
-                "narrator_briefing": "Keep the tone tense and suspicious. Focus on tells, silence, and power dynamics.",
-                "initial_tension_level": game_state.tension_level,
-                "initial_scene_energy": game_state.scene_energy,
-                "gm_private_notes": "Fallback opening used; proceed with normal adjudication.",
-            }
+                "narrator_briefing": {"type": "string"},
+                "initial_tension_level": {"type": "integer"},
+                "initial_scene_energy": {
+                    "type": "string",
+                    "enum": ["building", "plateau", "climactic", "resolving"],
+                },
+                "gm_private_notes": {"type": "string"},
+            },
+            "required": [
+                "player_intro",
+                "player_instructions",
+                "suggested_actions",
+                "npc_briefings",
+                "narrator_briefing",
+                "initial_tension_level",
+                "initial_scene_energy",
+                "gm_private_notes",
+            ],
+            "additionalProperties": False,
+        },
+    )
+
+    return json.loads(response)
 
     async def interpret_moment(
         self, player_input: Optional[str], initiator: str, game_state: GameState
