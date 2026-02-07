@@ -67,25 +67,45 @@ function formatStartupInfo(data) {
 }
 start_button.addEventListener("click", async function () {
 
+    if (start_button.dataset.loading) return;
+    start_button.dataset.loading = "true";
+
     inputEnabled = false;
 
-    const res = await fetch("/api/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-    });
+    // Immediate visual feedback
+    start_button.innerText = "Starting…";
+    start_button.style.pointerEvents = "none";
+    start_button.style.opacity = "0.85";
+    start_button.classList.add("loading");
 
-    const data = await res.json();
+    let data;
+    try {
+        const res = await fetch("/api/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
 
-    // fade out button
+        if (!res.ok) throw new Error("Start failed");
+        data = await res.json();
+
+    } catch (err) {
+        start_button.innerText = "Start failed — retry";
+        start_button.style.pointerEvents = "auto";
+        start_button.dataset.loading = "";
+        console.error(err);
+        return;
+    }
+
+    // Now that we HAVE data — transition UI
     start_button.style.opacity = "0";
 
     setTimeout(async () => {
         start_button.style.display = "none";
         main_page.style.display = "flex";
 
-        setTimeout(() => {
+        requestAnimationFrame(() => {
             main_page.style.opacity = "1";
-        }, 10);
+        });
 
         textarea.value = "";
 
@@ -104,14 +124,9 @@ start_button.addEventListener("click", async function () {
         );
 
         // ── ENTER SHELL MODE ──────────────────────────
-        textarea.value += "oops@2prod:~$\0 ";
-        inputEnabled = true;
+        enterShellMode();
 
-        textarea.selectionStart =
-        textarea.selectionEnd =
-            textarea.value.length;
-
-    }, 1000);
+    }, 600); // slightly faster feels snappier
 });
 
 exit_button.addEventListener("click", function () {
@@ -171,6 +186,7 @@ textarea.addEventListener("keydown", async (e) => {
             textarea.value += "\nNarrator: "
             await ghostTypeTextarea(textarea, response.narration);
             appendToLogger(response);
+            enterShellMode();
 
         } catch (err) {
             stopThinking();
@@ -389,3 +405,13 @@ function indentBlock(text, spaces) {
         .map(line => pad + line)
         .join("\n");
 }
+
+function enterShellMode() {
+    textarea.value += "oops@2prod:~$\0 ";
+    inputEnabled = true;
+
+    textarea.selectionStart =
+    textarea.selectionEnd =
+        textarea.value.length;
+}
+
