@@ -64,3 +64,31 @@ class GameState:
             'conclusion_type': self.conclusion_type,
             'conclusion_description': self.conclusion_description
         }
+    
+    def log_event(self, event_type: str, actor: str, description: str, location: str, participants: List[str] = None):
+        """Add event and update NPC knowledge"""
+        event = Event(
+            moment=self.moment_count,
+            event_type=event_type,
+            actor=actor,
+            description=description,
+            location=location,
+            participants=participants or [actor]
+        )
+
+        self.event_log.append(event)
+
+        # update NPC knowledge if they can perceive it
+        for npc in self.npcs.values():
+            if npc.can_perceive_event(event.to_dict()):
+                knowledge_entry = f"[Moment {self.moment_count}] {description}"
+                npc.knowledge.append(knowledge_entry)
+
+                # remember the 10 most recent events
+                if len(npc.knowledge) > 10:
+                    npc.knowledge = npc.knowledge[-10:]
+
+    def get_recent_narrative(self, n: int = 3) -> str:
+        """Get last N events as narrative"""
+        recent = self.event_log[-n:] if len(self.event_log) >= n else self.event_log
+        return "\n".join([f"- {e.description}" for e in recent])
