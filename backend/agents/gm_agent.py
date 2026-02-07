@@ -1,7 +1,8 @@
 from anthropic import Anthropic
-import json, os
+import json
+import os
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from backend.models.game_state import GameState
 
@@ -58,8 +59,8 @@ class GMAgent:
         CORE PRINCIPLES:
         1. You are OMNISCIENT: you know all NPC secrets, goals, and the complete world state
         2. You are NEUTRAL: do not favor player or any NPC
-        3. You are REALISTIC: describe waht would actually happen based on phyics and human psychology
-        4. You are OBJECTIVE: report evevnts as they occur, without bias
+        3. You are REALISTIC: describe what would actually happen based on physics and human psychology
+        4. You are OBJECTIVE: report events as they occur, without bias
 
         YOUR ROLE:
         - Interpret actions and determine their realistic consequences
@@ -94,7 +95,7 @@ class GMAgent:
         - You see everything, but NPCs have blind spots
         - Describe realistic consequences (injury, fear, mistakes happen)
         - Don't prevent NPCs from making bad decisions
-        - Don't steer towar "good" or "happy" endings
+        - Don't steer toward "good" or "happy" endings
         - Let tension build organically from character conflict
 
         Always respond in valid JSON format
@@ -234,7 +235,7 @@ Respond ONLY with valid JSON without any markdown or formatting:
             logger.error(f"GM interpretation JSON parse failed: {e}")
             logger.error(f"Raw response: {response[:200]}...")
 
-            # fallback to basic intepretation
+            # fallback to basic interpretation
             return self._fallback_interpretation(player_input, initiator, game_state)
 
     def _fallback_interpretation(
@@ -267,14 +268,14 @@ Respond ONLY with valid JSON without any markdown or formatting:
         - Current scene state
 
         And creates:
-        - Vivd, objective description
+        - Vivid, objective description
         - Updated tension level
         - Scene energy assessment
 
         This is the objective truth that the narrator will filter
 
         Args:
-            interpretation: GM's interpreation
+            interpretation: GM's interpretation
             npc_responses: List of NPC reaction dicts
             game_state: Current game state
 
@@ -282,7 +283,7 @@ Respond ONLY with valid JSON without any markdown or formatting:
             dict: {
                 'narrative': str (objective prose),
                 'tension_level': int (1-10),
-                'scene_energy': str (building/plateu/climactic/resolving),
+                'scene_energy': str (building/plateau/climactic/resolving),
                 'notable_changes': list[str]
             }
         """
@@ -294,7 +295,7 @@ Respond ONLY with valid JSON without any markdown or formatting:
                 reaction += f'Says: "{response["dialogue"]}"'
             if response.get("action"):
                 if response.get("dialogue"):
-                    reaction += f" AND "
+                    reaction += " AND "
                 reaction += f"Does: {response['action']}"
             if not response.get("dialogue") and not response.get("action"):
                 reaction += "Observes silently"
@@ -335,7 +336,7 @@ Respond only with valid JSON:
 {{
     "narrative": "vivid, specific, objective prose description (3-5 sentences)",
     "tension_level": 1-10,
-    "scene_energy": "building|plateu|climactic|resolving",
+    "scene_energy": "building|plateau|climactic|resolving",
     "notable_changes": ["specific", "state", "changes"]
 }}
 """
@@ -357,7 +358,7 @@ Respond only with valid JSON:
                         },
                         "scene_energy": {
                             "type": "string",
-                            "enum": ["building", "plateu", "climactic", "resolving"],
+                            "enum": ["building", "plateau", "climactic", "resolving"],
                             "description": "Current scene energy state",
                         },
                         "notable_changes": {
@@ -410,7 +411,7 @@ Respond only with valid JSON:
         return {
             "narrative": narrative,
             "tension_level": 5,
-            "scene_energy": "plateu",
+            "scene_energy": "plateau",
             "notable_changes": [],
         }
 
@@ -429,7 +430,7 @@ Respond only with valid JSON:
 
         Returns:
             dict: {
-                'energy_assessment': str (rising/plateu/falling/stalled),
+                'energy_assessment': str (rising/plateau/falling/stalled),
                 'needs_stimulus': bool,
                 'stimulus_suggestion': str (if needed),
                 'approaching_ending': bool,
@@ -445,7 +446,7 @@ SCENE PROGRESS:
 - Tension: {game_state.tension_level}/10
 - Energy: {game_state.scene_energy}
 
-RECENT EVENTSS:
+RECENT EVENTS:
 {game_state.get_recent_narrative(5)}
 
 NPC STATES:
@@ -467,7 +468,7 @@ NPC STATES:
 Assess the scene objectively:
 1. ENERGY: Is tension/action rising, flat, falling, or completely stalled?
     - Rising: NPCs escalating, tension building
-    - Plateu: Steadh state, neither rising nor falling
+    - Plateau: Steady state, neither rising nor falling
     - Falling: De-escalation happening
     - Stalled: Nothing happening, scene stuck
 
@@ -483,7 +484,7 @@ Assess the scene objectively:
 
 Respond only with valid JSON:
 {{
-    "energy_assessment": "rising|plateu|falling|stalled",
+    "energy_assessment": "rising|plateau|falling|stalled",
     "needs_stimulus": true/false,
     "stimulus_suggestion": "what external event could inject energy (if needed)",
     "approaching_ending": true/false,
@@ -500,7 +501,7 @@ Respond only with valid JSON:
                     "properties": {
                         "energy_assessment": {
                             "type": "string",
-                            "enum": ["rising", "plateu", "falling", "stalled"],
+                            "enum": ["rising", "plateau", "falling", "stalled"],
                             "description": "Current energy trend",
                         },
                         "needs_stimulus": {
@@ -550,7 +551,7 @@ Respond only with valid JSON:
 
             # Default scene fallback
             return {
-                "energy_assessment": "plateu",
+                "energy_assessment": "plateau",
                 "needs_stimulus": False,
                 "stimulus_suggestion": "",
                 "approaching_ending": False,
