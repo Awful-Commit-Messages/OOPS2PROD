@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Dict, List, Optional
 
-from backend.models.game_state import GameState
+from models.game_state import GameState
 
 # Logging of prompts, player actions, and state
 logger = logging.getLogger(__name__)

@@ -1,7 +1,7 @@
 import asyncio
-from backend.models.game_state import GameState
-from backend.models.npc_state import NPCState
-from backend.agents.gm_agent import GMAgent
+from models.game_state import GameState
+from models.npc_state import NPCState
+from agents.gm_agent import GMAgent
 
 n1 = NPCState("001",
     "Gustav Gorfoffensonn",

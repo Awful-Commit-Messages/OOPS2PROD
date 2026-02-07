@@ -189,11 +189,11 @@ Respond only with valid JSON:
                     "type": "object",
                     "properties": {
                         "dialogue": {
-                            "type": ["string", "null"],
+                            "type": "string",
                             "description": "What you say, or null if silent"
                         },
                         "action": {
-                            "type": ["string", "null"],
+                            "type": "string",
                             "description": "What you do physically, or null"
                         },
                         "internal_thought": {
@@ -206,14 +206,13 @@ Respond only with valid JSON:
                         },
                         "urgency_change": {
                             "type": "integer",
-                            "minimum": -2,
-                            "maximum": 2
                         },
                         "wants_to_act_next": {
                             "type": "boolean"
                         }
                     },
-                    "required": ["dialogue", "action", "internal_thought", "emotional_state", "urgency_change", "wants_to_act_next"]
+                    "required": ["dialogue", "action", "internal_thought", "emotional_state", "urgency_change", "wants_to_act_next"],
+                    "additionalProperties": False
                 })
             result = json.loads(response)
 
@@ -252,7 +251,7 @@ Respond only with valid JSON:
             self.npc_state.emotional_state = response['emotional_state']
 
         # update urgency
-        urgency_change = response.get['urgency_change', 0]
+        urgency_change = response.get('urgency_change', 0)
         self.npc_state.urgency_level = max(1, min(10, self.npc_state.urgency_level + urgency_change))
 
         # track last action
@@ -272,7 +271,7 @@ Respond only with valid JSON:
 
         return {
             'npc_id': self.npc_state.npc_id,
-            'npc_name': self.npc_state.npc_name,
+            'npc_name': self.npc_state.name,
             'dialogue': self.npc_state.dialogue,
             'action': f"{self.npc_state.name} watches tensely",
             'internal_thought': "Trying to assess the situation",
@@ -348,23 +347,26 @@ Respond only with valid JSON:
                             "type": "boolean"
                         },
                         "action": {
-                            "type": ["string", "null"],
+                            "type": "string",
                             "description": "What you do physically, or null"
                         },
                         "reasoning": {
                             "type": "string",
                             "description": "Your private reasoning"
                         }
-                    }
+                    },
+                    "required": ["should_act", "action", "reasoning"],
+                    "additionalProperties": False
+                    
                 })
-            result = json.load(response)
+            result = json.loads(response)
 
             if result.get('should_act'):
                 logger.info(f" {self.npc_state.name} WANTS TO ACT: {result['action']}")
 
                 return {
                     'npc_id': self.npc_state.npc_id,
-                    'npc_name': self.npc_state.npc_name,
+                    'npc_name': self.npc_state.name,
                     'action': result['action'],
                     'reasoning': result['reasoning']
                 }
@@ -399,8 +401,10 @@ Respond only with valid JSON:
                 }
             ],
             output_config={
-                "type": "json_schema",
-                "json_schema": response_schema
+                "format": {
+                    "type": "json_schema",
+                    "schema": response_schema
+                }
             }
         )
 
