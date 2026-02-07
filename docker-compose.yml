@@ -8,6 +8,6 @@ services:
     container_name: oops2prod
     ports:
       - "8000:8000"
-    environment:
-      - API_KEY=${ANTHROPIC_API_KEY}
-    restart: unless-stopped
+  environment:
+    - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+  restart: unless-stopped
