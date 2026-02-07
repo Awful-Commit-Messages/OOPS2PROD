@@ -23,12 +23,12 @@ def root():
     return FileResponse("frontend/app.html")
 
 
-# =======================================================
-# =======================================================
-# =====          These routes exist at /api/          ===
-# ===== All backend logic will pass throgh api routes ===
-# =======================================================
-# =======================================================
+# ========================================================
+# ========================================================
+# =====          These routes exist at /api/           ===
+# ===== All backend logic will pass through api routes ===
+# ========================================================
+# ========================================================
 api = APIRouter(prefix="/api")
 
 
@@ -39,8 +39,8 @@ def status():
 
 
 @api.post("/start")
-def start_game():
-    return engine.start_game()
+async def start_game():
+    return await engine.start_game()
 
 
 @api.post("/play")
