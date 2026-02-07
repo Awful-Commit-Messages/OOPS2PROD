@@ -125,7 +125,7 @@ NPC ROSTER (you are omniscient; use secrets/true goals for internal consistency)
 
 Your job:
 1) Write a **player-facing opening** that sets the scene clearly, establishes stakes, and ends with an
-   obvious invitation to act (do NOT directly reeal NPC secrets; convey them only through behavior/cues).
+   obvious invitation to act (do NOT directly real NPC secrets; convey them only through behavior/cues).
 2) Provide **clear gameplay instructions** (How the player should type actions/dialogue).
 3) Provide **NPC briefings**: for each npc_id, a short "what you perceive" + "what you intend next" note
    written from that NPC's perspective.  (They can know their own secrets, but do NOT include other NPC secrets.)
