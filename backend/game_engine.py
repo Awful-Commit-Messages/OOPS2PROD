@@ -385,3 +385,43 @@ async def process_moment(self, player_input: Optional[str] = None) -> dict:
             location=self.state.player_location,
         )
         logger.info(f"Stimulus: {external_event}")
+
+    # =========================================================================
+    # SAFETY RAIL: FORCE CONCLUSION IF TOO LONG
+    # =========================================================================
+
+    if (
+        self.state.moment_count >= self.state.max_moments
+        and not self.state.scene_concluded
+    ):
+        logger.warning("Scene exceeding max moments: forcing conclusion")
+        self._force_conclusion()
+
+    # =========================================================================
+    # RETURN RESULT
+    # =========================================================================
+
+    logger.info("=" * 60)
+    logger.info(f"MOMENT {self.state.moment_count} COMPLETE")
+    logger.info("=" * 60)
+
+    return {
+        # What the player sees (narrator's filtered version):
+        "narration": narrator_output["narration"],
+        "narrator_reliability": self.narrator_agent.narrator_state.reliability,
+        "narrator_aside": narrator_aside,
+        # Metadata for UI display:
+        "npc_responses": npc_responses,
+        "immediate_actions": immediate_actions,
+        "external_event": external_event,
+        # Game state
+        "state": self.state.to_dict(),
+        "scene_status": scene_status,
+        # Debug info (the GM's objective truth vs. the narrator's version):
+        "debug": {
+            "gm_objective_truth": gm_narrative["narrative"],
+            "narrator_noticed": narrator_output.get("what_you_noticed", []),
+            "narrator_missed": narrator_output.get("what_you_missed", []),
+            "narrator_interpretation": narrator_output("your_interpretation", ""),
+        },
+    }
