@@ -12,7 +12,7 @@ app = FastAPI()
 # =======================================================
 
 # mount frontend assets
-app.mount("/assets", StaticFiles(directory="frontend/assets"), name="assets")
+app.mount("/assets", StaticFiles(directory="./frontend/assets"), name="assets")
 
 # root route return frontend html with assets
 @app.get("/")
