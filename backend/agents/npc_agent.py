@@ -330,3 +330,28 @@ Respond only with valid JSON:
             logger.error(f"{self.npc_state.name} initiative check failed: {e}")
             return None
         
+    async def _call_claude(self, prompt: str) -> str:
+        """
+        Call Claude API with NPC's system prompt
+
+        Args:
+            prompt: User message (specific question/situation)
+
+        Returns:
+            str: Claude's response (should be JSON)
+        """
+        system_prompt = self.get_system_prompt()
+
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=800,
+            system=system_prompt,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+
+        return response.content[0].text
