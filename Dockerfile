@@ -12,16 +12,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first:
-COPY requirements.txt .
+COPY backend/requirements.txt .
 
 # Install the Python dependencies:
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the backend code:
-COPY . ./backend/
+COPY backend/ ./backend/
 
 # Copy frontend static files:
-COPY ../frontend/ ./frontend/
+COPY frontend/ ./frontend/
 
 # Expose the network port:
 EXPOSE 8000
@@ -31,4 +31,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/ || exit 1
 
 # Run the application:
+WORKDIR /app/backend
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
