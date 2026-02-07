@@ -54,8 +54,17 @@ class OrganicMultiAgentEngine:
             "initial_scene_energy", self.state.scene_energy
         )
 
-        npc_briefings = opening.get("npc_briefings", {}) or {}
-        for npc_id, briefing in npc_briefings.items():
+        npc_briefings = opening.get("npc_briefings") or []
+
+        # Backwards compatibility: allow either dict (old) or list (new)
+        if isinstance(npc_briefings, dict):
+            iterable = [{"npc_id": k, "briefing": v} for k, v in npc_briefings.items()]
+        else:
+            iterable = npc_briefings
+
+        for item in iterable:
+            npc_id = item.get("npc_id")
+            briefing = item.get("briefing")
             if npc_id in self.state.npcs and briefing:
                 self.state.npcs[npc_id].knowledge.append(f"[Scene start] {briefing}")
 
