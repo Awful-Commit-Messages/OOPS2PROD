@@ -210,3 +210,43 @@ Respond only with valid JSON:
 
             return self._fallback_response()
         
+    def _update_state_from_response(self, response: dict):
+        """
+        Update NPC's internal state based on their response
+
+        Args:
+            response: The NPC's response dict
+        """
+        # update emotional state
+        if response.get('emotional_state'):
+            self.npc_state.emotional_state = response['emotional_state']
+
+        # update urgency
+        urgency_change = response.get['urgency_change', 0]
+        self.npc_state.urgency_level = max(1, min(10, self.npc_state.urgency_level + urgency_change))
+
+        # track last action
+        if response.get('dialogue'):
+            self.npc_state.last_action = f"Said: \"{response['dialogue']}\""
+        elif response.get('action'):
+            self.npc_state.last_action = response['action']
+
+    def _fallback_response(self) -> dict:
+        """
+        Fallback response if API call fails
+
+        Returns:
+            dict: Basic response that lets the game continue
+        """
+        logger.warning(f"Using fallback response for {self.npc_state.name}")
+
+        return {
+            'npc_id': self.npc_state.npc_id,
+            'npc_name': self.npc_state.npc_name,
+            'dialogue': self.npc_state.dialogue,
+            'action': f"{self.npc_state.name} watches tensely",
+            'internal_thought': "Trying to assess the situation",
+            'emotional_state': self.npc_state.emotional_state,
+            'urgency_change': 0,
+            'wants_to_act_next': False
+        }
