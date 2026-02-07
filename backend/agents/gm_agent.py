@@ -101,89 +101,88 @@ class GMAgent:
         Always respond in valid JSON format
         """
 
-
-async def generate_opening_scene(self, game_state: GameState) -> dict:
-    npc_summary = {
-        npc_id: {
-            "name": npc.name,
-            "personality": npc.personality,
-            "emotional_state": npc.emotional_state,
-            "urgency_level": npc.urgency_level,
-            "goal": npc.current_goal,
-            "secrets": npc.secrets,
-            "knowledge_tail": npc.knowledge[-3:],
+    async def generate_opening_scene(self, game_state: GameState) -> dict:
+        npc_summary = {
+            npc_id: {
+                "name": npc.name,
+                "personality": npc.personality,
+                "emotional_state": npc.emotional_state,
+                "urgency_level": npc.urgency_level,
+                "goal": npc.current_goal,
+                "secrets": npc.secrets,
+                "knowledge_tail": npc.knowledge[-3:],
+            }
+            for npc_id, npc in game_state.npcs.items()
         }
-        for npc_id, npc in game_state.npcs.items()
-    }
-    npc_ids = list(game_state.npcs.keys())
+        npc_ids = list(game_state.npcs.keys())
 
-    prompt = f"""
-You are opening a new scene for an interactive roleplaying experience.
+        prompt = f"""
+    You are opening a new scene for an interactive roleplaying experience.
 
-SCENARIO:
-- Name: {game_state.scenario_name}
-- Player role: {game_state.player_role}
-- Situation: {game_state.situation_description}
-- Location: {game_state.player_location}
+    SCENARIO:
+    - Name: {game_state.scenario_name}
+    - Player role: {game_state.player_role}
+    - Situation: {game_state.situation_description}
+    - Location: {game_state.player_location}
 
-NPC ROSTER (omniscient; use secrets/true goals for internal consistency):
-{json.dumps(npc_summary, indent=2)}
+    NPC ROSTER (omniscient; use secrets/true goals for internal consistency):
+    {json.dumps(npc_summary, indent=2)}
 
-Output ONLY valid JSON with the following keys:
-- player_intro: string
-- player_instructions: string
-- suggested_actions: array of strings
-- npc_briefings: array of objects: {{ "npc_id": string, "briefing": string }}
-- narrator_briefing: string
-- initial_tension_level: integer (1-10)
-- initial_scene_energy: one of "building", "plateau", "climactic", "resolving"
-- gm_private_notes: string
-"""
+    Output ONLY valid JSON with the following keys:
+    - player_intro: string
+    - player_instructions: string
+    - suggested_actions: array of strings
+    - npc_briefings: array of objects: {{ "npc_id": string, "briefing": string }}
+    - narrator_briefing: string
+    - initial_tension_level: integer (1-10)
+    - initial_scene_energy: one of "building", "plateau", "climactic", "resolving"
+    - gm_private_notes: string
+    """
 
-    response = await self._call_claude(
-        prompt=prompt,
-        game_state=game_state,
-        response_schema={
-            "type": "object",
-            "properties": {
-                "player_intro": {"type": "string"},
-                "player_instructions": {"type": "string"},
-                "suggested_actions": {"type": "array", "items": {"type": "string"}},
-                "npc_briefings": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "npc_id": {"type": "string", "enum": npc_ids},
-                            "briefing": {"type": "string"},
+        response = await self._call_claude(
+            prompt=prompt,
+            game_state=game_state,
+            response_schema={
+                "type": "object",
+                "properties": {
+                    "player_intro": {"type": "string"},
+                    "player_instructions": {"type": "string"},
+                    "suggested_actions": {"type": "array", "items": {"type": "string"}},
+                    "npc_briefings": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "npc_id": {"type": "string", "enum": npc_ids},
+                                "briefing": {"type": "string"},
+                            },
+                            "required": ["npc_id", "briefing"],
+                            "additionalProperties": False,
                         },
-                        "required": ["npc_id", "briefing"],
-                        "additionalProperties": False,
                     },
+                    "narrator_briefing": {"type": "string"},
+                    "initial_tension_level": {"type": "integer"},
+                    "initial_scene_energy": {
+                        "type": "string",
+                        "enum": ["building", "plateau", "climactic", "resolving"],
+                    },
+                    "gm_private_notes": {"type": "string"},
                 },
-                "narrator_briefing": {"type": "string"},
-                "initial_tension_level": {"type": "integer"},
-                "initial_scene_energy": {
-                    "type": "string",
-                    "enum": ["building", "plateau", "climactic", "resolving"],
-                },
-                "gm_private_notes": {"type": "string"},
+                "required": [
+                    "player_intro",
+                    "player_instructions",
+                    "suggested_actions",
+                    "npc_briefings",
+                    "narrator_briefing",
+                    "initial_tension_level",
+                    "initial_scene_energy",
+                    "gm_private_notes",
+                ],
+                "additionalProperties": False,
             },
-            "required": [
-                "player_intro",
-                "player_instructions",
-                "suggested_actions",
-                "npc_briefings",
-                "narrator_briefing",
-                "initial_tension_level",
-                "initial_scene_energy",
-                "gm_private_notes",
-            ],
-            "additionalProperties": False,
-        },
-    )
+        )
 
-    return json.loads(response)
+        return json.loads(response)
 
     async def interpret_moment(
         self, player_input: Optional[str], initiator: str, game_state: GameState
