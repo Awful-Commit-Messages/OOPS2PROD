@@ -4,9 +4,9 @@ What if every NPC in a game was powered by their own AI agent with secrets, goal
 
 ## Starting the Server with Docker Compose (RECOMMENDED)
 
-0. Create a `.env` file with `ANTHROPIC_API_KEY=` followed by your API key (no quotes)
-1. `docker compose up`
-2. Open `localhost:8000` in your browser
+1. Create a `.env` file with `ANTHROPIC_API_KEY=` followed by your API key (no quotes)
+2. `docker compose up`
+3. Open `localhost:8000` in your browser
 
 ## Starting Server without Docker (NOT RECOMMENDED)
 `uvicorn backend.main:app --reload`
