@@ -8,7 +8,7 @@ What if every NPC in a game was powered by their own AI agent with secrets, goal
 2. Docker Compose and a modern web browser
 3. Internet access (uses LLM API calls)
 
-## Starting the Server with Docker Compose (RECOMMENDED)
+## Starting the Server with Docker Compose
 
 1. Create a `.env` file with `ANTHROPIC_API_KEY=` followed by your API key (no quotes)
   - We spent less than $3 testing and demoing this project.
