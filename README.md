@@ -1,12 +1,6 @@
 # OOPS2PROD
 
-> Shhh.  It's a *secret*.
-
-## Our Team
-
-- Adrien Abbey
-- David Castro
-- Rob Pierce
+What if every NPC in a game was powered by their own AI agent with secrets, goals, and limited knowledge? We built it. The story writes itself.
 
 ## Starting the Server with Docker Compose (RECOMMENDED)
 
@@ -16,3 +10,9 @@
 
 ## Starting Server without Docker (NOT RECOMMENDED)
 `uvicorn backend.main:app --reload`
+
+## Our Team
+
+- Adrien Abbey
+- David Castro
+- Rob Pierce
