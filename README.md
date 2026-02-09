@@ -17,6 +17,6 @@ What if every NPC in a game was powered by their own AI agent with secrets, goal
 
 ## Our Team
 
-- Adrien Abbey
+- [Adrien Abbey](abbey.12@wright.edu)
 - David Castro
 - Rob Pierce
